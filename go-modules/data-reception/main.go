@@ -15,7 +15,7 @@ func main() {
 		select {
 		case <-ticker.C:
 			fmt.Printf(os.Getenv("MQTT_PORT"), os.Getenv("MQTT_HOST"))
-			fmt.Println("Hola mundo")
+			fmt.Println("Hola mundo 222")
 		}
 	}
 }

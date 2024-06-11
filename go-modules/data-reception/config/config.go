@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ceiot-tf-sbc/modules/data-acquisition/models"
+	"ceiot-tf-background/go-modules/data-reception/models"
 
 	"github.com/joho/godotenv"
 )
@@ -24,22 +24,22 @@ func LoadEnvVars() (*models.Config, error) {
 		return nil, fmt.Errorf("error loading .env file: %w", err)
 	}
 
-	deviceID := os.Getenv("ID_DEVICE")
+	idDevice := os.Getenv("ID_DEVICE")
 	mqttHost := os.Getenv("MQTT_HOST")
 	mqttPort := os.Getenv("MQTT_PORT")
 
-	mqttClientID := fmt.Sprintf("mqtt-sbc-data-acquisition-%s", deviceID)
+	mqttClientID := fmt.Sprintf("mqtt-sbc-data-acquisition-%s", idDevice)
 	mqttBroker := fmt.Sprintf("ssl://%s:%s", mqttHost, mqttPort)
 
-	mqttSubConfigTopic := fmt.Sprintf("SERVER/CONFIG/%s", deviceID)
+	mqttSubConfigTopic := fmt.Sprintf("SERVER/CONFIG/%s", idDevice)
 	mqttSubTopics := []string{mqttSubConfigTopic}
 
-	mqttPubConfigTopic := fmt.Sprintf("DEVICES/%s/CONFIG", deviceID)
-	mqttPubDataTopic := fmt.Sprintf("DEVICES/%s/DATA", deviceID)
-	databasePath := os.Getenv("DB_PATH")
+	mqttPubConfigTopic := fmt.Sprintf("DEVICES/%s/CONFIG", idDevice)
+	mqttPubDataTopic := fmt.Sprintf("DEVICES/%s/DATA", idDevice)
+	databasePath := os.Getenv("SQLITE_DB_PATH")
 
 	config := &models.Config{
-		DeviceID:           deviceID,
+		IDDevice:           idDevice,
 		MQTTHost:           mqttHost,
 		MQTTPort:           mqttPort,
 		MQTTClientID:       mqttClientID,

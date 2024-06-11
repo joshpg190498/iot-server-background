@@ -49,14 +49,30 @@ services:
       - .env
     restart: always
 
-    
+  sbc-configuration:
+    build:
+      context: .
+      dockerfile: go-modules/sbc-configuration/Dockerfile
+    container_name: sbc-configuration-service
+    volumes:
+      - .:/go/src/app
+    ports:
+      - "4000:4000"
+    depends_on:
+      - kafka
+    networks:
+      - background
+    env_file:
+      - .env
+    restart: always    
+
   data-reception:
     build:
       context: .
       dockerfile: go-modules/data-reception/Dockerfile
     container_name: data-reception-service
     ports:
-      - "4000:4000"
+      - "4001:4001"
     depends_on:
       - mosquitto
     networks:

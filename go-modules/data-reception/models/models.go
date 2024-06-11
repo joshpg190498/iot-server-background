@@ -1,7 +1,7 @@
 package models
 
 type Device struct {
-	DeviceID    string
+	IDDevice    string
 	Description string
 }
 
@@ -18,7 +18,7 @@ type Config struct {
 }
 
 type MessageDataPayload struct {
-	DeviceID          string
+	IDDevice          string
 	Parameter         string
 	Data              any
 	UpdateDatetimeUTC string
