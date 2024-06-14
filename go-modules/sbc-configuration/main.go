@@ -10,15 +10,11 @@ import (
 
 	"encoding/json"
 	"log"
-	"sync"
 )
 
 var (
-	err          error
-	cfg          *models.Config
-	wg           sync.WaitGroup
-	mutex        sync.Mutex
-	stopChannels []chan struct{}
+	err error
+	cfg *models.Config
 )
 
 func main() {

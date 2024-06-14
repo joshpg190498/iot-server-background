@@ -24,30 +24,27 @@ func LoadEnvVars() (*models.Config, error) {
 		return nil, fmt.Errorf("error loading .env file: %w", err)
 	}
 
-	idDevice := os.Getenv("ID_DEVICE")
+	mqttClientID := "mqtt-background-data-reception"
+	mqttProtocol := os.Getenv("MQTT_PROTOCOL")
 	mqttHost := os.Getenv("MQTT_HOST")
 	mqttPort := os.Getenv("MQTT_PORT")
+	mqttBroker := fmt.Sprintf("%s://%s:%s", mqttProtocol, mqttHost, mqttPort)
 
-	mqttClientID := fmt.Sprintf("mqtt-sbc-data-acquisition-%s", idDevice)
-	mqttBroker := fmt.Sprintf("ssl://%s:%s", mqttHost, mqttPort)
+	mqttSubDataTopic := "DEVICES/+/DATA"
+	mqttSubTopics := []string{mqttSubDataTopic}
 
-	mqttSubConfigTopic := fmt.Sprintf("SERVER/CONFIG/%s", idDevice)
-	mqttSubTopics := []string{mqttSubConfigTopic}
-
-	mqttPubConfigTopic := fmt.Sprintf("DEVICES/%s/CONFIG", idDevice)
-	mqttPubDataTopic := fmt.Sprintf("DEVICES/%s/DATA", idDevice)
-	databasePath := os.Getenv("SQLITE_DB_PATH")
+	postgresUser := os.Getenv("POSTGRES_USER")
+	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
+	postgresHost := os.Getenv("POSTGRES_HOST")
+	postgresPort := os.Getenv("POSTGRES_PORT")
+	postgresDB := os.Getenv("POSTGRES_DB")
+	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
-		IDDevice:           idDevice,
-		MQTTHost:           mqttHost,
-		MQTTPort:           mqttPort,
-		MQTTClientID:       mqttClientID,
-		MQTTBroker:         mqttBroker,
-		MQTTSubTopics:      mqttSubTopics,
-		MQTTPubConfigTopic: mqttPubConfigTopic,
-		MQTTPubDataTopic:   mqttPubDataTopic,
-		DatabasePath:       databasePath,
+		MQTTClientID:  mqttClientID,
+		MQTTBroker:    mqttBroker,
+		MQTTSubTopics: mqttSubTopics,
+		PostgresURL:   postgresURL,
 	}
 
 	return config, nil
