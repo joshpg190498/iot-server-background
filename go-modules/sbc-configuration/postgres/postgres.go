@@ -63,7 +63,7 @@ func UpdateSBCConfirmation(tx pgx.Tx, idDevice, hashUpdate, cfgType, updateDatet
 	query := `
 		UPDATE DEVICE_UPDATES
 		SET UPDATE_DATETIME_UTC = $1
-		WHERE ID_DEVICE = $2 AND HASH_UPDATE = $3 AND TYPE = $4
+		WHERE ID_DEVICE = $2 AND HASH_UPDATE = $3 AND ID_TYPE = $4
 	`
 
 	_, err := tx.Exec(context.Background(), query, updateDatetimeUTC, idDevice, hashUpdate, cfgType)
