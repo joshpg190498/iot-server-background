@@ -10,6 +10,9 @@ COPY go.sum .
 RUN go mod download
 
 # Copy only the necessary directories and files
+COPY certs/ca-crt.pem ./certs/ca-crt.pem
+COPY certs/client-crt.pem ./certs/client-crt.pem
+COPY certs/client-key.pem ./certs/client-key.pem
 COPY go-modules/sbc-configuration/. ./go-modules/sbc-configuration/
 COPY go-modules/sbc-configuration/. ./go-modules/sbc-configuration/
 COPY go-modules/utils/. ./go-modules/utils/
@@ -27,7 +30,9 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /go/src/app/go-modules/sbc-configuration/main .
+COPY --from=builder /go/src/app/go-modules/sbc-configuration/main ./go-modules/sbc-configuration/main
+COPY --from=builder /go/src/app/certs ./certs
 
 # Set the entry point for the container
+WORKDIR /app/go-modules/sbc-configuration
 CMD ["./main"]
