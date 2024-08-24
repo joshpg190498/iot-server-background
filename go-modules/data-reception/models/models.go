@@ -1,6 +1,10 @@
 package models
 
 type Config struct {
+	KafkaClientID string
+	KafkaGroupID  string
+	KafkaBrokers  []string
+	KafkaTopics   []string
 	MQTTBroker    string
 	MQTTClientID  string
 	MQTTSubTopics []string

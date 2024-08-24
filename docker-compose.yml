@@ -48,6 +48,22 @@ services:
     env_file:
       - .env
     restart: always
+  
+  kafka-init:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    command: >
+      /bin/sh -c "
+      sleep 30 &&
+      kafka-topics --create --topic ${KAFKA_TOPIC_DEVICE_UPDATE} --bootstrap-server ${KAFKA_BROKER} --partitions 1 --replication-factor 1 --if-not-exists &&
+      kafka-topics --create --topic ${KAFKA_TOPIC_NEW_DEVICE_DATA} --bootstrap-server ${KAFKA_BROKER} --partitions 1 --replication-factor 1  --if-not-exists &&
+      kafka-topics --create --topic ${KAFKA_TOPIC_NEW_DEVICE_NOTIFICATION} --bootstrap-server ${KAFKA_BROKER} --partitions 1 --replication-factor 1 --if-not-exists
+      "
+    networks:
+      - background
+    env_file:
+      - .env
 
   sbc-configuration:
     build:

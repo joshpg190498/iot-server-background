@@ -21,6 +21,14 @@ func LoadEnvVars() (*models.Config, error) {
 		return nil, fmt.Errorf("error loading .env file: %w", err)
 	}*/
 
+	kafkaClientID := os.Getenv("SBC_DATA_RECEPTION_KAFKA_CLIENT_ID")
+	kafkaGroupID := os.Getenv("SBC_DATA_RECEPTION_KAFKA_GROUP_ID")
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	kafkaBrokers := []string{kafkaBroker}
+	kafkaTopicNewDeviceData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_DATA")
+	kafkaTopicNewDeviceNotification := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_NOTIFICATION")
+	kafkaTopics := []string{kafkaTopicNewDeviceData, kafkaTopicNewDeviceNotification}
+
 	mqttClientID := "mqtt-background-data-reception"
 	mqttProtocol := os.Getenv("MQTT_PROTOCOL")
 	mqttHost := os.Getenv("MQTT_HOST")
@@ -38,6 +46,10 @@ func LoadEnvVars() (*models.Config, error) {
 	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
+		KafkaClientID: kafkaClientID,
+		KafkaGroupID:  kafkaGroupID,
+		KafkaBrokers:  kafkaBrokers,
+		KafkaTopics:   kafkaTopics,
 		MQTTClientID:  mqttClientID,
 		MQTTBroker:    mqttBroker,
 		MQTTSubTopics: mqttSubTopics,

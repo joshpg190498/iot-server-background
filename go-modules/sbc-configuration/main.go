@@ -38,7 +38,7 @@ func startMQTTClient() {
 }
 
 func startKafkaClient() {
-	go kafka.ConnectClient(cfg.KafkaBrokers, cfg.KafkaGroupID, cfg.KafkaTopics, kafkaHandleMessage)
+	go kafka.InitializeReader(cfg.KafkaBrokers, cfg.KafkaGroupID, cfg.KafkaTopics, kafkaHandleMessage)
 }
 
 func initializeDatabase() {

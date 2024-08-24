@@ -16,16 +16,12 @@ var (
 	connectionLock sync.Mutex
 )
 
-func ConnectClient(brokers []string, groupID string, topics []string, handleMessage func(topic string, message []byte)) {
-	if topics == nil {
-		topics = []string{}
-	}
-
+func InitializeReader(brokers []string, groupID string, topics []string, handleMessage func(topic string, message []byte)) {
 	connectionLock.Lock()
 	defer connectionLock.Unlock()
 
 	if reader != nil {
-		log.Println("Already connected to Kafka")
+		log.Println("Kafka reader is already initialized")
 		return
 	}
 
@@ -38,35 +34,52 @@ func ConnectClient(brokers []string, groupID string, topics []string, handleMess
 	})
 
 	isConnected = true
-	log.Println("Connected to Kafka brokers:", brokers)
+	log.Println("Kafka reader initialized")
 
-	go func() {
-		for {
-			if !isConnected {
-				time.Sleep(2 * time.Second)
-				continue
-			}
-
-			m, err := reader.ReadMessage(context.Background())
-			if err != nil {
-				log.Printf("Error reading message: %v\n", err)
-				continue
-			}
-			handleMessage(m.Topic, m.Value)
-		}
-	}()
+	go StartListening(handleMessage)
 }
 
-func PublishData(brokers []string, topic string, key, data []byte) {
+func InitializeWriter(brokers []string) {
+	connectionLock.Lock()
+	defer connectionLock.Unlock()
+
+	if writer != nil {
+		log.Println("Kafka writer is already initialized")
+		return
+	}
+
+	writer = &kafka.Writer{
+		Addr:     kafka.TCP(brokers...),
+		Balancer: &kafka.LeastBytes{},
+	}
+
+	isConnected = true
+	log.Println("Kafka writer initialized")
+}
+
+func StartListening(handleMessage func(topic string, message []byte)) {
+	for {
+		if !isConnected {
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		m, err := reader.ReadMessage(context.Background())
+		if err != nil {
+			log.Printf("Error reading message: %v\n", err)
+			continue
+		}
+		handleMessage(m.Topic, m.Value)
+	}
+}
+
+func PublishData(topic string, key, data []byte) {
 	connectionLock.Lock()
 	defer connectionLock.Unlock()
 
 	if writer == nil {
-		writer = &kafka.Writer{
-			Addr:     kafka.TCP(brokers...),
-			Topic:    topic,
-			Balancer: &kafka.LeastBytes{},
-		}
+		log.Println("Kafka writer is not initialized")
+		return
 	}
 
 	if !isConnected {
@@ -75,11 +88,12 @@ func PublishData(brokers []string, topic string, key, data []byte) {
 	}
 
 	err := writer.WriteMessages(context.Background(), kafka.Message{
+		Topic: topic,
 		Key:   key,
 		Value: data,
 	})
 	if err != nil {
-		log.Printf("Error publishing to topic %s: %v\n", topic, err)
+		log.Printf("Error publishing message to topic %s: %v\n", topic, err)
 	} else {
 		log.Printf("Message published to topic %s: %s\n", topic, data)
 	}
@@ -90,12 +104,18 @@ func Close() {
 	defer connectionLock.Unlock()
 
 	if reader != nil {
-		reader.Close()
+		err := reader.Close()
+		if err != nil {
+			log.Printf("Error closing Kafka reader: %v\n", err)
+		}
 		reader = nil
 	}
 
 	if writer != nil {
-		writer.Close()
+		err := writer.Close()
+		if err != nil {
+			log.Printf("Error closing Kafka writer: %v\n", err)
+		}
 		writer = nil
 	}
 

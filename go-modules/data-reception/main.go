@@ -4,6 +4,7 @@ import (
 	"ceiot-tf-background/go-modules/data-reception/config"
 	"ceiot-tf-background/go-modules/data-reception/models"
 	"ceiot-tf-background/go-modules/data-reception/postgres"
+	"ceiot-tf-background/go-modules/utils/kafka"
 	"ceiot-tf-background/go-modules/utils/mqtt"
 	"encoding/json"
 	"log"
@@ -18,6 +19,7 @@ var (
 func main() {
 	loadConfiguration()
 	startMQTTClient()
+	startKafkaClient()
 	initializeDatabase()
 	defer postgres.CloseDB()
 	select {}
@@ -32,6 +34,10 @@ func loadConfiguration() {
 
 func startMQTTClient() {
 	go mqtt.ConnectClient(cfg.MQTTBroker, cfg.MQTTClientID, cfg.MQTTSubTopics, mqttHandleMessage)
+}
+
+func startKafkaClient() {
+	go kafka.InitializeWriter(cfg.KafkaBrokers)
 }
 
 func initializeDatabase() {
@@ -53,9 +59,11 @@ func mqttHandleMessage(topic string, message []byte) {
 
 	err = postgres.InsertData(dataPayload)
 	if err != nil {
-		log.Println("Error inserting data: %v", err)
+		log.Printf("Error inserting data: %v", err)
 		return
 	}
+
+	kafka.PublishData(cfg.KafkaTopics[0], nil, message)
 }
 
 func parseMqttMessage(message []byte) (models.DataPayload, error) {
