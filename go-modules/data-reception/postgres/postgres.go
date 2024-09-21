@@ -98,7 +98,7 @@ func insertDiskUsage(tx pgx.Tx, dataPayload models.DataPayload) error {
 func insertNetworkStats(tx pgx.Tx, dataPayload models.DataPayload) error {
 	query := `
 		INSERT INTO NETWORK_STATS (
-			ID_DEVICE, INTERFACE_NAME, BYTES_SENT, BYTES_RECV, PACKETS_SENT, PACKETS_RECV, ERR_OUT, ERR_IN, DROP_IN, DROP_OUT, COLLECTED_AT_UTC
+			ID_DEVICE, INTERFACE_NAME, BYTES_SENT, BYTES_RECV, PACKETS_SENT, PACKETS_RECV, ERROUT, ERRIN, DROPIN, DROPOUT, COLLECTED_AT_UTC
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
 
@@ -118,10 +118,10 @@ func insertNetworkStats(tx pgx.Tx, dataPayload models.DataPayload) error {
 			data["bytesRecv"],
 			data["packetsSent"],
 			data["packetsRecv"],
-			data["errOut"],
-			data["errIn"],
-			data["dropIn"],
-			data["dropOut"],
+			data["errout"],
+			data["errin"],
+			data["dropin"],
+			data["dropout"],
 			dataPayload.CollectedAtUtc)
 		if err != nil {
 			return fmt.Errorf("failed to insert network stats: %w", err)
@@ -332,13 +332,13 @@ func InsertData(dataPayload models.DataPayload) error {
 	return nil
 }
 
-func isEmptyObject(data interface{}) bool {
+func hasNoData(data interface{}) bool {
 	v := reflect.ValueOf(data)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if !field.IsZero() {
+			return false
+		}
 	}
-	if v.Kind() != reflect.Struct {
-		return true
-	}
-	return v.NumField() == 0
+	return true
 }
