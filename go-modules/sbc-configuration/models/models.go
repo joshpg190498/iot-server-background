@@ -42,6 +42,7 @@ type MainDeviceInformation struct {
 	OS        string `json:"os"`
 	Processor string `json:"processor"`
 	RAM       string `json:"ram"`
+	CpuCount  int    `json:"cpuCount"`
 }
 
 type ResponseConfigPayload struct {

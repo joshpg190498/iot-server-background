@@ -78,8 +78,8 @@ func UpdateSBCConfirmation(tx pgx.Tx, idDevice, hashUpdate, cfgType, updateDatet
 func InsertMainDeviceInformation(tx pgx.Tx, idDevice string, mainDeviceInfo models.MainDeviceInformation) error {
 	query := `
 		INSERT INTO MAIN_DEVICE_INFORMATION (
-			ID_DEVICE, HOSTNAME, PROCESSOR, RAM, HOSTID, OS, KERNEL
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+			ID_DEVICE, HOSTNAME, PROCESSOR, RAM, HOSTID, OS, KERNEL, CPU_COUNT
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := tx.Exec(
 		context.Background(),
@@ -91,6 +91,7 @@ func InsertMainDeviceInformation(tx pgx.Tx, idDevice string, mainDeviceInfo mode
 		mainDeviceInfo.HostID,
 		mainDeviceInfo.OS,
 		mainDeviceInfo.Kernel,
+		mainDeviceInfo.CpuCount,
 	)
 	if err != nil {
 		log.Println("Error inserting main device information:", err)
