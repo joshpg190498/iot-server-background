@@ -35,7 +35,7 @@ CREATE TABLE DEVICE_READING_SETTINGS (
     ID_DEVICE VARCHAR(255) REFERENCES DEVICES(ID_DEVICE) ON DELETE CASCADE,
     PARAMETER VARCHAR(255) REFERENCES PARAMETERS(ID_PARAMETER),
     PERIOD INT,
-    ACTIVE BOOLEAN DEFAULT TRUE, -- TRUE significa activo, FALSE significa inactivo
+    ACTIVE BOOLEAN DEFAULT TRUE,
     THRESHOLD_VALUE FLOAT NULL
 );
 
@@ -182,17 +182,17 @@ CREATE TABLE USERS (
 );
 
 -- DEFAULT DATA
-INSERT INTO PARAMETERS (ID_PARAMETER, DEFAULT_PERIOD, TABLE_POINTER, DESCRIPTION, HAS_THRESHOLD, THRESHOLD_COLUMN_NAME, DEFAULT_THRESHOLD_VALUE) VALUES
-('main_info', 3600, 'MAIN_DEVICE_INFORMATION', 'Información principal del dispositivo', FALSE, NULL, NULL),
-('ram', 30, 'RAM_USAGE', 'Uso de RAM', TRUE, 'USED_PERCENT_RAM', 70),
-('disk', 3600, 'DISK_USAGE', 'Uso de disco', TRUE, 'USED_PERCENT_DISK', 60),
-('net_stats', 180, 'NETWORK_STATS', 'Estadísticas de red', FALSE, NULL, NULL),
-('net_info', 600, 'NETWORK_INFORMATION', 'Información de red', FALSE, NULL, NULL),
-('cpu_temp', 30, 'CPU_TEMPERATURE', 'Temperatura de la CPU', TRUE, 'TEMPERATURE', 42),
-('uptime', 300, 'UPTIME', 'Tiempo en línea', FALSE, NULL, NULL),
-('last_reboot', 1800, 'LAST_REBOOT', 'Último reinicio del dispositivo', FALSE, NULL, NULL),
-('cpu_usage', 30, 'CPU_USAGE', 'Uso de CPU', TRUE, 'CPU_USAGE', 75),
-('load_average', 60, 'LOAD_AVERAGE', 'Promedio de carga', FALSE, 'LOAD_AVERAGE_5M', 1.5);
+INSERT INTO PARAMETERS (ID_PARAMETER, DEFAULT_PERIOD, TABLE_POINTER, DESCRIPTION, HAS_THRESHOLD, DEFAULT_THRESHOLD_VALUE) VALUES
+('main_info', 3600, 'MAIN_DEVICE_INFORMATION', 'Información principal del dispositivo', FALSE, NULL),
+('ram', 30, 'RAM_USAGE', 'Uso de RAM', TRUE, 70),
+('disk', 3600, 'DISK_USAGE', 'Uso de disco', TRUE, 60),
+('net_stats', 180, 'NETWORK_STATS', 'Estadísticas de red', FALSE, NULL),
+('net_info', 600, 'NETWORK_INFORMATION', 'Información de red', FALSE, NULL),
+('cpu_temp', 30, 'CPU_TEMPERATURE', 'Temperatura de la CPU', TRUE, 70),
+('uptime', 300, 'UPTIME', 'Tiempo en línea', FALSE, NULL),
+('last_reboot', 1800, 'LAST_REBOOT', 'Último reinicio del dispositivo', FALSE, NULL),
+('cpu_usage', 30, 'CPU_USAGE', 'Uso de CPU', TRUE, 75),
+('load_average', 60, 'LOAD_AVERAGE', 'Promedio de carga', TRUE, 70);
 
 INSERT INTO UPDATE_TYPES (ID_TYPE, DESCRIPTION) VALUES
 ('startup', 'Inicialización del dispositivo'),
