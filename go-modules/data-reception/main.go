@@ -55,7 +55,6 @@ func mqttHandleMessage(topic string, message []byte) {
 	if err != nil {
 		return
 	}
-	log.Println(dataPayload)
 
 	err = postgres.InsertData(dataPayload)
 	if err != nil {

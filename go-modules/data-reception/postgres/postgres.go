@@ -9,27 +9,28 @@ import (
 	"reflect"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
-	db *pgx.Conn
+	db *pgxpool.Pool
 )
 
 func ConnectDB(connString string) error {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, connString)
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		return err
 	}
 
-	db = conn
+	db = pool
 	log.Println("Connected to PostgreSQL")
 	return nil
 }
 
 func CloseDB() {
 	if db != nil {
-		db.Close(context.Background())
+		db.Close()
 		log.Println("PostgreSQL connection closed")
 	}
 }
@@ -307,11 +308,16 @@ func InsertData(dataPayload models.DataPayload) error {
 		return errors.New("empty data payload")
 	}
 
-	tx, err := db.Begin(ctx)
+	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+		}
+	}()
+	defer tx.Rollback(ctx) // Will only be committed if successful
 
 	functions := getInsertDataFunctions()
 	if function, exists := functions[dataPayload.Parameter]; exists {

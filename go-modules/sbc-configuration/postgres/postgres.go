@@ -7,27 +7,28 @@ import (
 	"ceiot-tf-background/go-modules/sbc-configuration/models"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
-	db *pgx.Conn
+	db *pgxpool.Pool
 )
 
 func ConnectDB(connString string) error {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, connString)
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		return err
 	}
 
-	db = conn
+	db = pool
 	log.Println("Connected to PostgreSQL")
 	return nil
 }
 
 func CloseDB() {
 	if db != nil {
-		db.Close(context.Background())
+		db.Close()
 		log.Println("PostgreSQL connection closed")
 	}
 }
@@ -41,7 +42,7 @@ func GetDeviceReadingSettings(idDevice string) ([]models.DeviceReadingSetting, e
 
 	rows, err := db.Query(context.Background(), query, idDevice)
 	if err != nil {
-		log.Println("Error getting device reading settings: %v", err)
+		log.Printf("Error getting device reading settings: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -50,10 +51,15 @@ func GetDeviceReadingSettings(idDevice string) ([]models.DeviceReadingSetting, e
 	for rows.Next() {
 		var setting models.DeviceReadingSetting
 		if err := rows.Scan(&setting.IDDevice, &setting.Parameter, &setting.Period, &setting.Active); err != nil {
-			log.Println("Error getting device reading settings: %v", err)
+			log.Printf("Error scanning device reading settings: %v", err)
 			return nil, err
 		}
 		settings = append(settings, setting)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		return nil, err
 	}
 
 	return settings, nil
@@ -94,7 +100,7 @@ func InsertMainDeviceInformation(tx pgx.Tx, idDevice string, mainDeviceInfo mode
 		mainDeviceInfo.CpuCount,
 	)
 	if err != nil {
-		log.Println("Error inserting main device information:", err)
+		log.Printf("Error inserting main device information: %v", err)
 		return err
 	}
 	return nil
@@ -102,11 +108,16 @@ func InsertMainDeviceInformation(tx pgx.Tx, idDevice string, mainDeviceInfo mode
 
 func UpdateDeviceAndInsertInfo(rCfgPayload models.ResponseConfigPayload) error {
 	ctx := context.Background()
-	tx, err := db.Begin(ctx)
+	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+		}
+	}()
+	defer tx.Rollback(ctx) // Will only be committed if successful
 
 	err = UpdateSBCConfirmation(tx, rCfgPayload.IDDevice, rCfgPayload.HashUpdate, rCfgPayload.Type, rCfgPayload.UpdateDatetimeUTC)
 	if err != nil {

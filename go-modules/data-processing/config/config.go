@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ceiot-tf-background/go-modules/data-reception/models"
+	"ceiot-tf-background/go-modules/data-processing/models"
 
 	"github.com/joho/godotenv"
 )
@@ -26,18 +26,8 @@ func LoadEnvVars() (*models.Config, error) {
 
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	kafkaBrokers := []string{kafkaBroker}
-	kafkaTopicNewDeviceData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_DATA")
-	kafkaTopicNewDeviceNotification := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_NOTIFICATION")
-	kafkaTopics := []string{kafkaTopicNewDeviceData, kafkaTopicNewDeviceNotification}
-
-	mqttClientID := "mqtt-background-data-reception"
-	mqttProtocol := os.Getenv("MQTT_PROTOCOL")
-	mqttHost := os.Getenv("MQTT_HOST")
-	mqttPort := os.Getenv("MQTT_PORT")
-	mqttBroker := fmt.Sprintf("%s://%s:%s", mqttProtocol, mqttHost, mqttPort)
-
-	mqttSubDataTopic := "DEVICES/+/DATA"
-	mqttSubTopics := []string{mqttSubDataTopic}
+	kafkaTopicNewDeviceProcessedData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_PROCESSED_DATA")
+	kafkaTopics := []string{kafkaTopicNewDeviceProcessedData}
 
 	postgresUser := os.Getenv("POSTGRES_USER")
 	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
@@ -47,12 +37,9 @@ func LoadEnvVars() (*models.Config, error) {
 	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
-		KafkaBrokers:  kafkaBrokers,
-		KafkaTopics:   kafkaTopics,
-		MQTTClientID:  mqttClientID,
-		MQTTBroker:    mqttBroker,
-		MQTTSubTopics: mqttSubTopics,
-		PostgresURL:   postgresURL,
+		KafkaBrokers: kafkaBrokers,
+		KafkaTopics:  kafkaTopics,
+		PostgresURL:  postgresURL,
 	}
 
 	return config, nil
