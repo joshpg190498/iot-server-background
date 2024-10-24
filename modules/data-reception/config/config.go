@@ -3,32 +3,15 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"ceiot-tf-background/go-modules/data-reception/models"
-
-	"github.com/joho/godotenv"
+	"ceiot-tf-background/modules/data-reception/models"
 )
 
 func LoadEnvVars() (*models.Config, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener el directorio actual: %w", err)
-	}
-
-	parentDir := filepath.Join(dir, "..", "..")
-	envFile := filepath.Join(parentDir, ".env")
-
-	err = godotenv.Load(envFile)
-	if err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
-	}
-
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	kafkaBrokers := []string{kafkaBroker}
 	kafkaTopicNewDeviceData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_DATA")
-	kafkaTopicNewDeviceNotification := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_NOTIFICATION")
-	kafkaTopics := []string{kafkaTopicNewDeviceData, kafkaTopicNewDeviceNotification}
+	kafkaTopics := []string{kafkaTopicNewDeviceData}
 
 	mqttClientID := "mqtt-background-data-reception"
 	mqttProtocol := os.Getenv("MQTT_PROTOCOL")

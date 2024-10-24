@@ -1,11 +1,11 @@
 package main
 
 import (
-	"ceiot-tf-background/go-modules/data-reception/config"
-	"ceiot-tf-background/go-modules/data-reception/models"
-	"ceiot-tf-background/go-modules/data-reception/postgres"
-	"ceiot-tf-background/go-modules/utils/kafka"
-	"ceiot-tf-background/go-modules/utils/mqtt"
+	"ceiot-tf-background/modules/data-reception/config"
+	"ceiot-tf-background/modules/data-reception/models"
+	"ceiot-tf-background/modules/data-reception/postgres"
+	"ceiot-tf-background/modules/utils/kafka"
+	"ceiot-tf-background/modules/utils/mqtt"
 	"encoding/json"
 	"log"
 	"strings"

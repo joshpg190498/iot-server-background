@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"ceiot-tf-background/go-modules/data-reception/models"
+	"ceiot-tf-background/modules/data-reception/models"
 	"context"
 	"errors"
 	"fmt"
@@ -317,7 +317,7 @@ func InsertData(dataPayload models.DataPayload) error {
 			tx.Rollback(ctx)
 		}
 	}()
-	defer tx.Rollback(ctx) // Will only be committed if successful
+	defer tx.Rollback(ctx)
 
 	functions := getInsertDataFunctions()
 	if function, exists := functions[dataPayload.Parameter]; exists {

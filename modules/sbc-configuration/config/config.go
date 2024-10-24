@@ -4,23 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"ceiot-tf-background/go-modules/sbc-configuration/models"
+	"ceiot-tf-background/modules/sbc-configuration/models"
 )
 
 func LoadEnvVars() (*models.Config, error) {
-	/* dir, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener el directorio actual: %w", err)
-	}
-
-	parentDir := filepath.Join(dir, "..", "..")
-	envFile := filepath.Join(parentDir, ".env")
-
-	err = godotenv.Load(envFile)
-	if err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
-	}*/
-
 	kafkaClientID := os.Getenv("SBC_CONFIGURATION_KAFKA_CLIENT_ID")
 	kafkaGroupID := os.Getenv("SBC_CONFIGURATION_KAFKA_GROUP_ID")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")

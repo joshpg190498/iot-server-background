@@ -1,11 +1,11 @@
 package main
 
 import (
-	"ceiot-tf-background/go-modules/sbc-configuration/config"
-	"ceiot-tf-background/go-modules/sbc-configuration/models"
-	"ceiot-tf-background/go-modules/sbc-configuration/postgres"
-	"ceiot-tf-background/go-modules/utils/kafka"
-	"ceiot-tf-background/go-modules/utils/mqtt"
+	"ceiot-tf-background/modules/sbc-configuration/config"
+	"ceiot-tf-background/modules/sbc-configuration/models"
+	"ceiot-tf-background/modules/sbc-configuration/postgres"
+	"ceiot-tf-background/modules/utils/kafka"
+	"ceiot-tf-background/modules/utils/mqtt"
 	"strings"
 
 	"encoding/json"

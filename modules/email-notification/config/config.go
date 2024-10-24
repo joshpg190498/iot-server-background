@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ceiot-tf-background/go-modules/data-processing/models"
+	"ceiot-tf-background/modules/email-notification/models"
 
 	"github.com/joho/godotenv"
 )
@@ -24,10 +24,12 @@ func LoadEnvVars() (*models.Config, error) {
 		return nil, fmt.Errorf("error loading .env file: %w", err)
 	}
 
+	kafkaClientID := os.Getenv("EMAIL_NOTIFICATION_KAFKA_CLIENT_ID")
+	kafkaGroupID := os.Getenv("EMAIL_NOTIFICATION_KAFKA_GROUP_ID")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	kafkaBrokers := []string{kafkaBroker}
-	kafkaTopicNewDeviceProcessedData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_PROCESSED_DATA")
-	kafkaTopics := []string{kafkaTopicNewDeviceProcessedData}
+	kafkaTopicNewDeviceData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_DATA")
+	kafkaTopics := []string{kafkaTopicNewDeviceData}
 
 	postgresUser := os.Getenv("POSTGRES_USER")
 	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
@@ -37,9 +39,11 @@ func LoadEnvVars() (*models.Config, error) {
 	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
-		KafkaBrokers: kafkaBrokers,
-		KafkaTopics:  kafkaTopics,
-		PostgresURL:  postgresURL,
+		KafkaClientID: kafkaClientID,
+		KafkaGroupID:  kafkaGroupID,
+		KafkaBrokers:  kafkaBrokers,
+		KafkaTopics:   kafkaTopics,
+		PostgresURL:   postgresURL,
 	}
 
 	return config, nil

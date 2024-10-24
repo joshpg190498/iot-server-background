@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"ceiot-tf-background/go-modules/sbc-configuration/models"
+	"ceiot-tf-background/modules/sbc-configuration/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

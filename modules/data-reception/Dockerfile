@@ -13,12 +13,12 @@ RUN go mod download
 COPY certs/ca-crt.pem ./certs/ca-crt.pem
 COPY certs/client-crt.pem ./certs/client-crt.pem
 COPY certs/client-key.pem ./certs/client-key.pem
-COPY go-modules/data-reception/. ./go-modules/data-reception/
-COPY go-modules/data-reception/. ./go-modules/data-reception/
-COPY go-modules/utils/. ./go-modules/utils/
+COPY modules/data-reception/. ./modules/data-reception/
+COPY modules/data-reception/. ./modules/data-reception/
+COPY modules/utils/. ./modules/utils/
 
 # Change working directory to build the application
-WORKDIR /go/src/app/go-modules/data-reception
+WORKDIR /go/src/app/modules/data-reception
 
 # Build the Go application
 RUN go build -o main .
@@ -30,10 +30,10 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-RUN mkdir -p /app/go-modules/data-reception
-COPY --from=builder /go/src/app/go-modules/data-reception/main ./go-modules/data-reception/main
+RUN mkdir -p /app/modules/data-reception
+COPY --from=builder /go/src/app/modules/data-reception/main ./modules/data-reception/main
 COPY --from=builder /go/src/app/certs ./certs
 
 # Set the entry point for the container
-WORKDIR /app/go-modules/data-reception
+WORKDIR /app/modules/data-reception
 CMD ["./main"]

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"ceiot-tf-background/go-modules/data-processing/config"
-	"ceiot-tf-background/go-modules/data-processing/models"
-	"ceiot-tf-background/go-modules/data-processing/postgres"
-	"ceiot-tf-background/go-modules/utils/kafka"
+	"ceiot-tf-background/modules/data-processing/config"
+	"ceiot-tf-background/modules/data-processing/models"
+	"ceiot-tf-background/modules/data-processing/postgres"
+	"ceiot-tf-background/modules/utils/kafka"
 	"encoding/json"
 	"fmt"
 	"log"

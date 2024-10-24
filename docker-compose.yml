@@ -68,7 +68,7 @@ services:
   sbc-configuration:
     build:
       context: .
-      dockerfile: go-modules/sbc-configuration/Dockerfile
+      dockerfile: modules/sbc-configuration/Dockerfile
     container_name: sbc-configuration-service
     ports:
       - "4000:4000"
@@ -83,7 +83,7 @@ services:
   data-reception:
     build:
       context: .
-      dockerfile: go-modules/data-reception/Dockerfile
+      dockerfile: modules/data-reception/Dockerfile
     container_name: data-reception-service
     ports:
       - "4001:4001"
