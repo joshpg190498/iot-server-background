@@ -1,9 +1,9 @@
 package main
 
 import (
-	"ceiot-tf-background/modules/sbc-configuration/config"
-	"ceiot-tf-background/modules/sbc-configuration/models"
-	"ceiot-tf-background/modules/sbc-configuration/postgres"
+	"ceiot-tf-background/modules/device-configuration/config"
+	"ceiot-tf-background/modules/device-configuration/models"
+	"ceiot-tf-background/modules/device-configuration/postgres"
 	"ceiot-tf-background/modules/utils/kafka"
 	"ceiot-tf-background/modules/utils/mqtt"
 	"strings"

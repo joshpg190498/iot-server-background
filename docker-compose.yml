@@ -65,11 +65,11 @@ services:
     env_file:
       - .env
 
-  sbc-configuration:
+  device-configuration:
     build:
       context: .
-      dockerfile: modules/sbc-configuration/Dockerfile
-    container_name: sbc-configuration-service
+      dockerfile: modules/device-configuration/Dockerfile
+    container_name: device-configuration-service
     ports:
       - "4000:4000"
     depends_on:

@@ -13,12 +13,12 @@ RUN go mod download
 COPY certs/ca-crt.pem ./certs/ca-crt.pem
 COPY certs/client-crt.pem ./certs/client-crt.pem
 COPY certs/client-key.pem ./certs/client-key.pem
-COPY modules/sbc-configuration/. ./modules/sbc-configuration/
-COPY modules/sbc-configuration/. ./modules/sbc-configuration/
+COPY modules/device-configuration/. ./modules/device-configuration/
+COPY modules/device-configuration/. ./modules/device-configuration/
 COPY modules/utils/. ./modules/utils/
 
 # Change working directory to build the application
-WORKDIR /go/src/app/modules/sbc-configuration
+WORKDIR /go/src/app/modules/device-configuration
 
 # Build the Go application
 RUN go build -o main .
@@ -30,9 +30,9 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /go/src/app/modules/sbc-configuration/main ./modules/sbc-configuration/main
+COPY --from=builder /go/src/app/modules/device-configuration/main ./modules/device-configuration/main
 COPY --from=builder /go/src/app/certs ./certs
 
 # Set the entry point for the container
-WORKDIR /app/modules/sbc-configuration
+WORKDIR /app/modules/device-configuration
 CMD ["./main"]

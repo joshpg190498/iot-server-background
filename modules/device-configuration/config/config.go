@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"ceiot-tf-background/modules/sbc-configuration/models"
+	"ceiot-tf-background/modules/device-configuration/models"
 )
 
 func LoadEnvVars() (*models.Config, error) {
@@ -15,7 +15,7 @@ func LoadEnvVars() (*models.Config, error) {
 	kafkaTopicDeviceUpdate := os.Getenv("KAFKA_TOPIC_DEVICE_UPDATE")
 	kafkaTopics := []string{kafkaTopicDeviceUpdate}
 
-	mqttClientID := "mqtt-background-sbc-configuration"
+	mqttClientID := "mqtt-background-device-configuration"
 	mqttProtocol := os.Getenv("MQTT_PROTOCOL")
 	mqttHost := os.Getenv("MQTT_HOST")
 	mqttPort := os.Getenv("MQTT_PORT")
