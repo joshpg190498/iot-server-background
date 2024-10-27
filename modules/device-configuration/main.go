@@ -49,6 +49,10 @@ func initializeDatabase() {
 }
 
 func kafkaHandleMessage(topic string, message []byte) {
+	if topic != cfg.KafkaTopics[0] {
+		return
+	}
+
 	kafkaMessage, err := parseKafkaMessage(message)
 	if err != nil {
 		return
@@ -88,7 +92,7 @@ func buildMessageConfigPayload(kafkaMessage models.KafkaMessage, deviceReadingSe
 }
 
 func mqttHandleMessage(topic string, message []byte) {
-	if !strings.HasPrefix(topic, "DEVICES/") || !strings.HasSuffix(topic, "/CONFIG") {
+	if !strings.HasPrefix(topic, "devices/") || !strings.HasSuffix(topic, "/config") {
 		return
 	}
 

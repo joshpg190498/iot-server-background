@@ -1,9 +1,7 @@
 package models
 
 type Config struct {
-	KafkaBrokers []string
-	KafkaTopics  []string
-	PostgresURL  string
+	PostgresURL string
 }
 
 type DeviceParameter struct {

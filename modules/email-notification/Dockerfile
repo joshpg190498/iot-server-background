@@ -10,11 +10,11 @@ COPY go.sum .
 RUN go mod download
 
 # Copy only the necessary directories and files
-COPY modules/device-configuration/. ./modules/device-configuration/
+COPY modules/email-notification/. ./modules/email-notification/
 COPY modules/utils/. ./modules/utils/
 
 # Change working directory to build the application
-WORKDIR /go/src/app/modules/device-configuration
+WORKDIR /go/src/app/modules/email-notification
 
 # Build the Go application
 RUN go build -o main .
@@ -26,9 +26,9 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /go/src/app/modules/device-configuration/main ./modules/device-configuration/main
-COPY --from=builder /go/src/app/modules/device-configuration/certs/. ./modules/device-configuration/certs/
+RUN mkdir -p /app/modules/email-notification
+COPY --from=builder /go/src/app/modules/email-notification/main ./modules/email-notification/main
 
 # Set the entry point for the container
-WORKDIR /app/modules/device-configuration
+WORKDIR /app/modules/email-notification
 CMD ["./main"]

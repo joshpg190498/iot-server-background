@@ -10,10 +10,6 @@ COPY go.sum .
 RUN go mod download
 
 # Copy only the necessary directories and files
-COPY certs/ca-crt.pem ./certs/ca-crt.pem
-COPY certs/client-crt.pem ./certs/client-crt.pem
-COPY certs/client-key.pem ./certs/client-key.pem
-COPY modules/data-processing/. ./modules/data-processing/
 COPY modules/data-processing/. ./modules/data-processing/
 COPY modules/utils/. ./modules/utils/
 
@@ -32,7 +28,6 @@ WORKDIR /app
 # Copy the compiled binary from the builder stage
 RUN mkdir -p /app/modules/data-processing
 COPY --from=builder /go/src/app/modules/data-processing/main ./modules/data-processing/main
-COPY --from=builder /go/src/app/certs ./certs
 
 # Set the entry point for the container
 WORKDIR /app/modules/data-processing

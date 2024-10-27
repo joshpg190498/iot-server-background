@@ -48,7 +48,7 @@ func initializeDatabase() {
 }
 
 func mqttHandleMessage(topic string, message []byte) {
-	if !strings.HasPrefix(topic, "DEVICES/") || !strings.HasSuffix(topic, "/DATA") {
+	if !strings.HasPrefix(topic, "devices/") || !strings.HasSuffix(topic, "/data") {
 		return
 	}
 	dataPayload, err := parseMqttMessage(message)

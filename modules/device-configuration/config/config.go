@@ -8,23 +8,22 @@ import (
 )
 
 func LoadEnvVars() (*models.Config, error) {
-	kafkaClientID := os.Getenv("SBC_CONFIGURATION_KAFKA_CLIENT_ID")
-	kafkaGroupID := os.Getenv("SBC_CONFIGURATION_KAFKA_GROUP_ID")
+	kafkaClientID := "background-device-configuration-kafka-client"
+	kafkaGroupID := "device-update-events-handler-group"
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	kafkaBrokers := []string{kafkaBroker}
-	kafkaTopicDeviceUpdate := os.Getenv("KAFKA_TOPIC_DEVICE_UPDATE")
-	kafkaTopics := []string{kafkaTopicDeviceUpdate}
+	kafkaTopics := []string{"device-update-events"}
 
-	mqttClientID := "mqtt-background-device-configuration"
+	mqttClientID := "background-device-configuration-mqtt-client"
 	mqttProtocol := os.Getenv("MQTT_PROTOCOL")
 	mqttHost := os.Getenv("MQTT_HOST")
 	mqttPort := os.Getenv("MQTT_PORT")
 	mqttBroker := fmt.Sprintf("%s://%s:%s", mqttProtocol, mqttHost, mqttPort)
 
-	mqttSubConfigTopic := "DEVICES/+/CONFIG"
+	mqttSubConfigTopic := "devices/+/config"
 	mqttSubTopics := []string{mqttSubConfigTopic}
 
-	mqttPubConfigTopicTemp := "SERVER/CONFIG/___DEVICE___"
+	mqttPubConfigTopicTemp := "server/config/___DEVICE___"
 
 	postgresUser := os.Getenv("POSTGRES_USER")
 	postgresPassword := os.Getenv("POSTGRES_PASSWORD")

@@ -10,16 +10,15 @@ import (
 func LoadEnvVars() (*models.Config, error) {
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	kafkaBrokers := []string{kafkaBroker}
-	kafkaTopicNewDeviceData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_DATA")
-	kafkaTopics := []string{kafkaTopicNewDeviceData}
+	kafkaTopics := []string{"device-data-events"}
 
-	mqttClientID := "mqtt-background-data-reception"
+	mqttClientID := "background-data-reception-mqtt-client"
 	mqttProtocol := os.Getenv("MQTT_PROTOCOL")
 	mqttHost := os.Getenv("MQTT_HOST")
 	mqttPort := os.Getenv("MQTT_PORT")
 	mqttBroker := fmt.Sprintf("%s://%s:%s", mqttProtocol, mqttHost, mqttPort)
 
-	mqttSubDataTopic := "DEVICES/+/DATA"
+	mqttSubDataTopic := "devices/+/data"
 	mqttSubTopics := []string{mqttSubDataTopic}
 
 	postgresUser := os.Getenv("POSTGRES_USER")

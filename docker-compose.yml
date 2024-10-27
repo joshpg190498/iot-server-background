@@ -1,81 +1,11 @@
 version: '3.8'
 services:
-  postgresql:
-    image: postgres:alpine3.20
-    container_name: postgres-db
-    ports: 
-      - "5440:5432"
-    volumes:
-      - postgres-db:/var/lib/postgresql/data
-    networks:
-      - background
-    env_file:
-      - .env
-    restart: always
-
-  mosquitto:
-    image: eclipse-mosquitto:2.0
-    container_name: mosquitto-server
-    ports:
-      - "1888:1888"
-      - "8888:8888"
-    volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./certs:/mosquitto/config/certs
-    networks:
-      - background
-    restart: always
-  
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    ports:
-      - 2181:2181
-    networks:
-      - background
-    env_file:
-      - .env
-    restart: always      
-    
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
-    ports:
-      - 9092:9092
-      - 29092:29092
-    networks:
-      - background
-    env_file:
-      - .env
-    restart: always
-  
-  kafka-init:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - kafka
-    command: >
-      /bin/sh -c "
-      sleep 30 &&
-      kafka-topics --create --topic ${KAFKA_TOPIC_DEVICE_UPDATE} --bootstrap-server ${KAFKA_BROKER} --partitions 1 --replication-factor 1 --if-not-exists &&
-      kafka-topics --create --topic ${KAFKA_TOPIC_NEW_DEVICE_DATA} --bootstrap-server ${KAFKA_BROKER} --partitions 1 --replication-factor 1  --if-not-exists &&
-      kafka-topics --create --topic ${KAFKA_TOPIC_NEW_DEVICE_NOTIFICATION} --bootstrap-server ${KAFKA_BROKER} --partitions 1 --replication-factor 1 --if-not-exists
-      "
-    networks:
-      - background
-    env_file:
-      - .env
-
   device-configuration:
     build:
       context: .
       dockerfile: modules/device-configuration/Dockerfile
-    container_name: device-configuration-service
     ports:
       - "4000:4000"
-    depends_on:
-      - kafka
-    networks:
-      - background
     env_file:
       - .env
     restart: always    
@@ -84,20 +14,18 @@ services:
     build:
       context: .
       dockerfile: modules/data-reception/Dockerfile
-    container_name: data-reception-service
     ports:
       - "4001:4001"
-    depends_on:
-      - mosquitto
-    networks:
-      - background
     env_file:
       - .env
     restart: always
 
-networks:
-  background:
-    driver: bridge
-
-volumes:
-  postgres-db:
+  data-processing:
+    build:
+      context: .
+      dockerfile: modules/data-processing/Dockerfile
+    ports:
+      - "4002:4002"
+    env_file:
+      - .env
+    restart: always

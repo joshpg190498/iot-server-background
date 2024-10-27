@@ -11,7 +11,7 @@ import (
 )
 
 func LoadEnvVars() (*models.Config, error) {
-	dir, err := os.Getwd()
+	dir, err := os.Executable()
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener el directorio actual: %w", err)
 	}
@@ -24,12 +24,11 @@ func LoadEnvVars() (*models.Config, error) {
 		return nil, fmt.Errorf("error loading .env file: %w", err)
 	}
 
-	kafkaClientID := os.Getenv("EMAIL_NOTIFICATION_KAFKA_CLIENT_ID")
-	kafkaGroupID := os.Getenv("EMAIL_NOTIFICATION_KAFKA_GROUP_ID")
+	kafkaClientID := "background-email-notifications-kafka-client"
+	kafkaGroupID := "device-data-events-notification-group"
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	kafkaBrokers := []string{kafkaBroker}
-	kafkaTopicNewDeviceData := os.Getenv("KAFKA_TOPIC_NEW_DEVICE_DATA")
-	kafkaTopics := []string{kafkaTopicNewDeviceData}
+	kafkaTopics := []string{"device-data-events"}
 
 	postgresUser := os.Getenv("POSTGRES_USER")
 	postgresPassword := os.Getenv("POSTGRES_PASSWORD")

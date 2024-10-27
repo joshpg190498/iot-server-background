@@ -4,9 +4,6 @@ import (
 	"ceiot-tf-background/modules/data-processing/config"
 	"ceiot-tf-background/modules/data-processing/models"
 	"ceiot-tf-background/modules/data-processing/postgres"
-	"ceiot-tf-background/modules/utils/kafka"
-	"encoding/json"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -21,7 +18,6 @@ var (
 
 func main() {
 	loadConfiguration()
-	startKafkaClient()
 	initializeDatabase()
 	initializeProcessing()
 	defer postgres.CloseDB()
@@ -33,10 +29,6 @@ func loadConfiguration() {
 	if err != nil {
 		log.Fatalf("Failed to load environment variables: %v", err)
 	}
-}
-
-func startKafkaClient() {
-	go kafka.InitializeWriter(cfg.KafkaBrokers)
 }
 
 func initializeDatabase() {
@@ -109,27 +101,7 @@ func startProcessingForDeviceParameter(deviceID, param string, stopChan chan boo
 			}
 			if status == 1 {
 				log.Printf("Successfully processed data for device %s and parameter %s", deviceID, param)
-				data, err := serializeDeviceParameter(deviceID, param)
-				if err != nil {
-					log.Printf("Error serializing device and parameter: %v", err)
-				} else {
-					kafka.PublishData(cfg.KafkaTopics[0], nil, data)
-				}
 			}
 		}
 	}
-}
-
-func serializeDeviceParameter(deviceID, param string) ([]byte, error) {
-	deviceParam := models.DeviceParameter{
-		DeviceID: deviceID,
-		Param:    param,
-	}
-
-	data, err := json.Marshal(deviceParam)
-	if err != nil {
-		return nil, fmt.Errorf("error serializing device and parameter: %w", err)
-	}
-
-	return data, nil
 }
