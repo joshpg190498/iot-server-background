@@ -96,20 +96,10 @@ func ProcessParameterData(deviceID string, param string) (int, error) {
 		return 0, nil
 	}
 
-	fmt.Print(startTime, deviceID, param)
-
-	switch param {
-	case "cpu_temp":
-		return processCPUTempData(deviceID, startTime)
-	case "load_average":
-		return processLoadAverageData(deviceID, startTime)
-	case "disk":
-		return processDiskUsageData(deviceID, startTime)
-	case "ram":
-		return processRAMUsageData(deviceID, startTime)
-	case "cpu_usage":
-		return processCPUUsageData(deviceID, startTime)
-	default:
+	functions := getProcessFunctions()
+	if function, exists := functions[param]; exists {
+		return function(deviceID, startTime)
+	} else {
 		return -1, fmt.Errorf("unsupported parameter: %s", param)
 	}
 }
@@ -454,4 +444,16 @@ func UpdateProcessingPointer(deviceID, param string, nextHour time.Time) error {
 		DO UPDATE SET LAST_PROCESSED_AT = $3
 	`, deviceID, param, nextHour)
 	return err
+}
+
+type ProcessFunc func(deviceID string, startTime time.Time) (int, error)
+
+func getProcessFunctions() map[string]ProcessFunc {
+	return map[string]ProcessFunc{
+		"cpu_temp":     processCPUTempData,
+		"load_average": processLoadAverageData,
+		"disk":         processDiskUsageData,
+		"ram":          processRAMUsageData,
+		"cpu_usage":    processCPUUsageData,
+	}
 }

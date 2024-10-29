@@ -10,11 +10,11 @@ COPY go.sum .
 RUN go mod download
 
 # Copy only the necessary directories and files
-COPY modules/email-notification/. ./modules/email-notification/
+COPY modules/threshold-validator/. ./modules/threshold-validator/
 COPY modules/utils/. ./modules/utils/
 
 # Change working directory to build the application
-WORKDIR /go/src/app/modules/email-notification
+WORKDIR /go/src/app/modules/threshold-validator
 
 # Build the Go application
 RUN go build -o main .
@@ -26,9 +26,9 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-RUN mkdir -p /app/modules/email-notification
-COPY --from=builder /go/src/app/modules/email-notification/main ./modules/email-notification/main
+RUN mkdir -p /app/modules/threshold-validator
+COPY --from=builder /go/src/app/modules/threshold-validator/main ./modules/threshold-validator/main
 
 # Set the entry point for the container
-WORKDIR /app/modules/email-notification
+WORKDIR /app/modules/threshold-validator
 CMD ["./main"]
