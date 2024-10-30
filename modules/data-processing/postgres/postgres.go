@@ -72,12 +72,12 @@ func GetActiveParameters() ([]string, error) {
 }
 
 func ProcessParameterData(deviceID string, param string) (int, error) {
-	lastProcessed, err := GetLastProcessedTime(deviceID, param)
+	lastProcessed, err := getLastProcessedTime(deviceID, param)
 	if err != nil {
 		return -1, fmt.Errorf("could not fetch last processed time: %w", err)
 	}
 
-	firstDataTime, err := GetFirstDataTimestamp(param, deviceID, lastProcessed)
+	firstDataTime, err := getFirstDataTimestamp(param, deviceID, lastProcessed)
 	if err != nil {
 		return -1, fmt.Errorf("could not fetch first data timestamp: %w", err)
 	}
@@ -109,10 +109,10 @@ func getStartTime(lastProcessed time.Time) time.Time {
 	return startTime
 }
 
-func GetLastProcessedTime(deviceID, param string) (time.Time, error) {
+func getLastProcessedTime(deviceID, param string) (time.Time, error) {
 	var lastProcessed time.Time
 	err := db.QueryRow(context.Background(), `
-		SELECT LAST_PROCESSED_AT
+		SELECT LAST_PROCESSED_AT_UTC
 		FROM PROCESSING_POINTERS_HOURLY
 		WHERE ID_DEVICE = $1 AND ID_PARAMETER = $2
 	`, deviceID, param).Scan(&lastProcessed)
@@ -124,7 +124,7 @@ func GetLastProcessedTime(deviceID, param string) (time.Time, error) {
 	return lastProcessed, err
 }
 
-func GetFirstDataTimestamp(param string, deviceID string, lastProcessed time.Time) (time.Time, error) {
+func getFirstDataTimestamp(param string, deviceID string, lastProcessed time.Time) (time.Time, error) {
 	var firstTimestamp *time.Time
 	var query string
 	switch param {
@@ -214,7 +214,7 @@ func processCPUTempData(deviceID string, startTime time.Time) (int, error) {
 		return -1, fmt.Errorf("could not process CPU temperature data for device %s: %w", deviceID, err)
 	}
 
-	err = UpdateProcessingPointer(deviceID, "cpu_temp", nextHour)
+	err = updateProcessingPointer(deviceID, "cpu_temp", nextHour)
 	if err != nil {
 		return -1, fmt.Errorf("could not update processing pointer for device %s and parameter cpu_temp: %w", deviceID, err)
 	}
@@ -279,7 +279,7 @@ func processLoadAverageData(deviceID string, startTime time.Time) (int, error) {
 		return -1, fmt.Errorf("could not process load average data for device %s: %w", deviceID, err)
 	}
 
-	err = UpdateProcessingPointer(deviceID, "load_average", nextHour)
+	err = updateProcessingPointer(deviceID, "load_average", nextHour)
 	if err != nil {
 		return -1, fmt.Errorf("could not update processing pointer for device %s and parameter load_average: %w", deviceID, err)
 	}
@@ -326,7 +326,7 @@ func processCPUUsageData(deviceID string, startTime time.Time) (int, error) {
 		return -1, fmt.Errorf("could not process CPU usage data for device %s: %w", deviceID, err)
 	}
 
-	err = UpdateProcessingPointer(deviceID, "cpu_usage", nextHour)
+	err = updateProcessingPointer(deviceID, "cpu_usage", nextHour)
 	if err != nil {
 		return -1, fmt.Errorf("could not update processing pointer for device %s and parameter cpu_usage: %w", deviceID, err)
 	}
@@ -343,9 +343,9 @@ func processDiskUsageData(deviceID string, startTime time.Time) (int, error) {
 					ID_DEVICE,
 					DISK_NAME,
 					START_TIME,
-					AVG_USED_PERCENT,
-					MIN_USED_PERCENT,
-					MAX_USED_PERCENT,
+					AVG_USED_PERCENT_DISK,
+					MIN_USED_PERCENT_DISK,
+					MAX_USED_PERCENT_DISK,
 					TOTAL_DISK,
 					ROW_COUNT,
 					INSERTED_AT_UTC
@@ -354,9 +354,9 @@ func processDiskUsageData(deviceID string, startTime time.Time) (int, error) {
 					ID_DEVICE,
 					DISK_NAME,
 					$2 AS START_TIME,
-					AVG(USED_PERCENT) AS AVG_USED_PERCENT,
-					MIN(USED_PERCENT) AS MIN_USED_PERCENT,
-					MAX(USED_PERCENT) AS MAX_USED_PERCENT,
+					AVG(USED_PERCENT_DISK) AS AVG_USED_PERCENT_DISK,
+					MIN(USED_PERCENT_DISK) AS MIN_USED_PERCENT_DISK,
+					MAX(USED_PERCENT_DISK) AS MAX_USED_PERCENT_DISK,
 					MAX(TOTAL_DISK) AS TOTAL_DISK,
 					COUNT(*) AS ROW_COUNT,
 					CURRENT_TIMESTAMP AS INSERTED_AT_UTC
@@ -365,9 +365,9 @@ func processDiskUsageData(deviceID string, startTime time.Time) (int, error) {
 			GROUP BY ID_DEVICE, DISK_NAME
 			ON CONFLICT (ID_DEVICE, DISK_NAME, START_TIME)
 			DO UPDATE SET 
-					AVG_USED_PERCENT = EXCLUDED.AVG_USED_PERCENT,
-					MIN_USED_PERCENT = EXCLUDED.MIN_USED_PERCENT,
-					MAX_USED_PERCENT = EXCLUDED.MAX_USED_PERCENT,
+					AVG_USED_PERCENT_DISK = EXCLUDED.AVG_USED_PERCENT_DISK,
+					MIN_USED_PERCENT_DISK = EXCLUDED.MIN_USED_PERCENT_DISK,
+					MAX_USED_PERCENT_DISK = EXCLUDED.MAX_USED_PERCENT_DISK,
 					TOTAL_DISK = EXCLUDED.TOTAL_DISK,
 					ROW_COUNT = EXCLUDED.ROW_COUNT,
 					INSERTED_AT_UTC = EXCLUDED.INSERTED_AT_UTC
@@ -378,7 +378,7 @@ func processDiskUsageData(deviceID string, startTime time.Time) (int, error) {
 		return -1, fmt.Errorf("could not process disk usage data for device %s: %w", deviceID, err)
 	}
 
-	err = UpdateProcessingPointer(deviceID, "disk", nextHour)
+	err = updateProcessingPointer(deviceID, "disk", nextHour)
 	if err != nil {
 		return -1, fmt.Errorf("could not update processing pointer for device %s and parameter disk_usage: %w", deviceID, err)
 	}
@@ -428,7 +428,7 @@ func processRAMUsageData(deviceID string, startTime time.Time) (int, error) {
 		return -1, fmt.Errorf("could not process RAM usage data for device %s: %w", deviceID, err)
 	}
 
-	err = UpdateProcessingPointer(deviceID, "ram", nextHour)
+	err = updateProcessingPointer(deviceID, "ram", nextHour)
 	if err != nil {
 		return -1, fmt.Errorf("could not update processing pointer for device %s and parameter ram_usage: %w", deviceID, err)
 	}
@@ -436,12 +436,12 @@ func processRAMUsageData(deviceID string, startTime time.Time) (int, error) {
 	return 1, nil
 }
 
-func UpdateProcessingPointer(deviceID, param string, nextHour time.Time) error {
+func updateProcessingPointer(deviceID, param string, nextHour time.Time) error {
 	_, err := db.Exec(context.Background(), `
-		INSERT INTO PROCESSING_POINTERS_HOURLY (ID_DEVICE, ID_PARAMETER, LAST_PROCESSED_AT)
+		INSERT INTO PROCESSING_POINTERS_HOURLY (ID_DEVICE, ID_PARAMETER, LAST_PROCESSED_AT_UTC)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (ID_DEVICE, ID_PARAMETER)
-		DO UPDATE SET LAST_PROCESSED_AT = $3
+		DO UPDATE SET LAST_PROCESSED_AT_UTC = $3
 	`, deviceID, param, nextHour)
 	return err
 }

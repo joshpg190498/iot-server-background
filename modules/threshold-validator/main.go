@@ -21,7 +21,6 @@ func main() {
 	loadConfiguration()
 	startKafkaClient()
 	initializeDatabase()
-	initializeSmtp()
 	defer postgres.CloseDB()
 	select {}
 }
@@ -41,13 +40,6 @@ func initializeDatabase() {
 	err = postgres.ConnectDB(cfg.PostgresURL)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
-	}
-}
-
-func initializeSmtp() {
-	err = mail.NewSmtpClient(cfg.SmtpConfig)
-	if err != nil {
-		log.Fatalf("Failed to initialize smtp: %v", err)
 	}
 }
 

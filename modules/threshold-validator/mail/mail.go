@@ -11,16 +11,15 @@ import (
 )
 
 var (
-	err    error
-	client *smtp.Client
+	err error
 )
 
-func NewSmtpClient(smtpConfig models.SmtpConfig) error {
+func newSmtpClient(smtpConfig models.SmtpConfig) (*smtp.Client, error) {
 	addr := fmt.Sprintf("%s:%s", smtpConfig.Host, smtpConfig.Port)
 	auth := smtp.PlainAuth("", smtpConfig.User, smtpConfig.Password, smtpConfig.Host)
 	conn, err := smtp.Dial(addr)
 	if err != nil {
-		return fmt.Errorf("failed to dial SMTP server: %w", err)
+		return nil, fmt.Errorf("failed to dial SMTP server: %w", err)
 	}
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: false,
@@ -29,20 +28,26 @@ func NewSmtpClient(smtpConfig models.SmtpConfig) error {
 
 	if err = conn.StartTLS(tlsConfig); err != nil {
 		conn.Close()
-		return fmt.Errorf("failed to start TLS: %w", err)
+		return nil, fmt.Errorf("failed to start TLS: %w", err)
 	}
 
 	if err := conn.Auth(auth); err != nil {
 		conn.Close()
-		return err
+		return nil, fmt.Errorf("failed to authenticate: %w", err)
 	}
-	client = conn
 	log.Println("Connected to SMTP Client")
-	return nil
+	return conn, nil
 }
 
 func SendNotification(smtpConfig models.SmtpConfig, body string) bool {
-	err := client.Mail(smtpConfig.User)
+	client, err := newSmtpClient(smtpConfig)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	defer client.Close()
+
+	err = client.Mail(smtpConfig.User)
 	if err != nil {
 		log.Println(err)
 		return false

@@ -23,6 +23,9 @@ func evaluateCPUTemperature(evaluator models.DeviceReadingSetting, dataPayload m
 	exceeded := []models.ThresholdExceededData{}
 
 	for sensorKey, temperature := range data {
+		if sensorKey == "cpu_thermal_crit" {
+			continue
+		}
 		tempValue := temperature.(float64)
 		if tempValue > float64(*evaluator.ThresholdValue) {
 			exceeded = append(exceeded, models.ThresholdExceededData{Key: sensorKey, Value: tempValue})

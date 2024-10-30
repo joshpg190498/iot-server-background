@@ -29,3 +29,13 @@ services:
     env_file:
       - .env
     restart: always
+
+  threshold-validator:
+    build:
+      context: .
+      dockerfile: modules/threshold-validator/Dockerfile
+    ports:
+      - "4003:4003"
+    env_file:
+      - .env
+    restart: always
