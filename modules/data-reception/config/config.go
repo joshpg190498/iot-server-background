@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 
 	"ceiot-tf-background/modules/data-reception/models"
@@ -26,7 +27,8 @@ func LoadEnvVars() (*models.Config, error) {
 	postgresHost := os.Getenv("POSTGRES_HOST")
 	postgresPort := os.Getenv("POSTGRES_PORT")
 	postgresDB := os.Getenv("POSTGRES_DB")
-	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPassword, postgresHost, postgresPort, postgresDB)
+	encodedPostgresPassword := url.QueryEscape(postgresPassword)
+	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, encodedPostgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
 		KafkaBrokers:  kafkaBrokers,
