@@ -52,3 +52,9 @@ type ResponseConfigPayload struct {
 	MainDeviceInformation MainDeviceInformation
 	UpdateDatetimeUTC     string
 }
+
+type NotUpdatedDevices struct {
+	IDDevice   string
+	HashUpdate string
+	Type       string
+}

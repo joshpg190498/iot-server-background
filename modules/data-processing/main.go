@@ -42,8 +42,9 @@ func initializeProcessing() {
 	routines = make(map[string]chan bool)
 	go func() {
 		for {
+			timer := time.NewTimer(15 * time.Minute)
+			<-timer.C
 			refreshProcessingRoutines()
-			time.Sleep(15 * time.Minute)
 		}
 	}()
 }
@@ -94,12 +95,16 @@ func startProcessingForDeviceParameter(deviceID, param string, stopChan chan boo
 			status, err := postgres.ProcessParameterData(deviceID, param)
 			if err != nil {
 				log.Printf("Error processing data for device %s and parameter %s: %v", deviceID, param, err)
-				time.Sleep(time.Hour)
+				log.Printf("Retrying in 1 hour for device %s and parameter %s", deviceID, param)
+				timer := time.NewTimer(1 * time.Hour)
+				<-timer.C
+				continue
 			}
 			if status == 0 {
-				time.Sleep(time.Hour)
-			}
-			if status == 1 {
+				log.Printf("No data to process for device %s and parameter %s. Retrying in 1 hour.", deviceID, param)
+				timer := time.NewTimer(1 * time.Hour)
+				<-timer.C
+			} else if status == 1 {
 				log.Printf("Successfully processed data for device %s and parameter %s", deviceID, param)
 			}
 		}

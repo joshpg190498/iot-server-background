@@ -33,6 +33,58 @@ func CloseDB() {
 	}
 }
 
+func GetNotUpdatedDevices() ([]models.NotUpdatedDevices, error) {
+	query := `
+		WITH LatestEntries AS (
+			SELECT
+					id_device,
+					hash_update,
+					id_type as type,
+					creation_datetime_utc,
+					ROW_NUMBER() OVER (
+							PARTITION BY id_device 
+							ORDER BY creation_datetime_utc DESC
+					) AS row_num
+			FROM
+					device_updates
+			WHERE
+					update_datetime_utc IS NULL
+		)
+		SELECT
+				id_device,
+				hash_update,
+				type
+		FROM
+				LatestEntries
+		WHERE
+				row_num = 1;
+	`
+
+	rows, err := db.Query(context.Background(), query)
+	if err != nil {
+		log.Printf("Error getting not updated devices: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	notUpdatedDevices := []models.NotUpdatedDevices{}
+	for rows.Next() {
+		var notUpdatedDevice models.NotUpdatedDevices
+		if err := rows.Scan(&notUpdatedDevice.IDDevice, &notUpdatedDevice.HashUpdate, &notUpdatedDevice.Type); err != nil {
+			log.Printf("Error scanning device not updated devices: %v", err)
+			return nil, err
+		}
+		notUpdatedDevices = append(notUpdatedDevices, notUpdatedDevice)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		return nil, err
+	}
+
+	return notUpdatedDevices, nil
+}
+
 func GetDeviceReadingSettings(idDevice string) ([]models.DeviceReadingSetting, error) {
 	query := `
 		SELECT ID_DEVICE, PARAMETER, PERIOD, ACTIVE

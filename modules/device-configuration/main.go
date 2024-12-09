@@ -7,6 +7,7 @@ import (
 	"ceiot-tf-background/modules/utils/kafka"
 	"ceiot-tf-background/modules/utils/mqtt"
 	"strings"
+	"time"
 
 	"encoding/json"
 	"log"
@@ -22,6 +23,7 @@ func main() {
 	startMQTTClient()
 	startKafkaClient()
 	initializeDatabase()
+	go periodicDatabaseCheck()
 	defer postgres.CloseDB()
 	select {}
 }
@@ -57,11 +59,16 @@ func kafkaHandleMessage(topic string, message []byte) {
 	if err != nil {
 		return
 	}
-	deviceReadingSettings, err := postgres.GetDeviceReadingSettings(kafkaMessage.IDDevice)
+
+	publishConfigurationToDevice(kafkaMessage.IDDevice, kafkaMessage.HashUpdate, kafkaMessage.Type)
+}
+
+func publishConfigurationToDevice(idDevice string, hashUpdate string, idType string) {
+	deviceReadingSettings, err := postgres.GetDeviceReadingSettings(idDevice)
 	if err != nil {
 		return
 	}
-	messageConfigPayload := buildMessageConfigPayload(kafkaMessage, deviceReadingSettings)
+	messageConfigPayload := buildMessageConfigPayload(idDevice, hashUpdate, idType, deviceReadingSettings)
 
 	mqttPayload, err := stringifyPayload(messageConfigPayload)
 	if err != nil {
@@ -82,11 +89,11 @@ func parseKafkaMessage(message []byte) (models.KafkaMessage, error) {
 	return kafkaMessage, nil
 }
 
-func buildMessageConfigPayload(kafkaMessage models.KafkaMessage, deviceReadingSettings []models.DeviceReadingSetting) models.MessageConfigPayload {
+func buildMessageConfigPayload(IDDevice string, HashUpdate string, Type string, deviceReadingSettings []models.DeviceReadingSetting) models.MessageConfigPayload {
 	return models.MessageConfigPayload{
-		IDDevice:   kafkaMessage.IDDevice,
-		HashUpdate: kafkaMessage.HashUpdate,
-		Type:       kafkaMessage.Type,
+		IDDevice:   IDDevice,
+		HashUpdate: HashUpdate,
+		Type:       Type,
 		Settings:   deviceReadingSettings,
 	}
 }
@@ -124,4 +131,23 @@ func stringifyPayload(payload any) (string, error) {
 	}
 	stringJsonData := string(jsonData)
 	return stringJsonData, nil
+}
+
+func periodicDatabaseCheck() {
+	for {
+		notUpdatedDevices, err := postgres.GetNotUpdatedDevices()
+		if err != nil {
+			log.Printf("Error fetching not updated devices: %v", err)
+			timer := time.NewTimer(1 * time.Minute)
+			<-timer.C
+			continue
+		}
+
+		for _, device := range notUpdatedDevices {
+			publishConfigurationToDevice(device.IDDevice, device.HashUpdate, device.Type)
+		}
+
+		timer := time.NewTimer(1 * time.Minute)
+		<-timer.C
+	}
 }

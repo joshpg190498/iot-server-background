@@ -60,7 +60,8 @@ func InitializeWriter(brokers []string) {
 func StartListening(handleMessage func(topic string, message []byte)) {
 	for {
 		if !isConnected {
-			time.Sleep(2 * time.Second)
+			timer := time.NewTimer(2 * time.Second)
+			<-timer.C
 			continue
 		}
 
