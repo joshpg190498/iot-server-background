@@ -82,19 +82,19 @@ func InsertLog(dataPayload models.DataPayload, setting models.DeviceReadingSetti
 	}
 
 	insertQuery := `
-		INSERT INTO THRESHOLD_EXCEEDS (ID_DEVICE, ID_PARAMETER, TABLE_POINTER, ID_REFERENCE, DATA, EMAIL_SENT)
+		INSERT INTO THRESHOLD_ALERTS (ID_DEVICE, ID_PARAMETER, TABLE_POINTER, ID_REFERENCE, DATA, EMAIL_SENT)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	_, err = tx.Exec(ctx, insertQuery, dataPayload.IDDevice, setting.Parameter, setting.TablePointer, idRef, string(dataJSON), sentEmail)
 	if err != nil {
-		return fmt.Errorf("error inserting into THRESHOLD_EXCEEDS: %w", err)
+		return fmt.Errorf("error inserting into THRESHOLD_ALERTS: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("error committing transaction: %w", err)
 	}
 
-	log.Println("Log inserted into THRESHOLD_EXCEEDS")
+	log.Println("Log inserted into THRESHOLD_ALERTS")
 	return nil
 }
 
