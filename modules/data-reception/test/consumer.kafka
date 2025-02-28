@@ -1,0 +1,3 @@
+CONSUMER new-data-event
+topic: device-data-events
+from: latest

@@ -1,0 +1,13 @@
+PRODUCER new-data-event
+topic: device-data-events
+{
+  "IDDevice":"REMU001",
+  "Parameter":"ram",
+  "Data":{
+    "freeRAM":237,
+    "totalRAM":1971,
+    "usedPercentRAM":87.97,
+    "usedRAM":1734
+  },
+  "CollectedAtUtc":"2025-02-16T02:06:00Z"
+}

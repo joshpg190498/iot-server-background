@@ -1,0 +1,8 @@
+PRODUCER new-device-message
+topic: device-update-events
+{
+  "id": 17,
+  "id_device": "REMU001",
+  "hash_update": "0596d8dec3d0",
+  "type": "startup"
+}

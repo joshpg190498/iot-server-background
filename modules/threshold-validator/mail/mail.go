@@ -122,14 +122,14 @@ func buildContentCPUTemperature(id_device string, threshold float64, exceededReg
 
 func buildContentDiskUsage(id_device string, threshold float64, exceededRegister models.ThresholdExceededData) string {
 	emailContent := fmt.Sprintf(
-		"El disco %s en el dispositivo %s reportó un uso del %.2f %, superando el umbral definido de %.2f %",
+		"El disco %s en el dispositivo %s reportó un uso del %.2f %%, superando el umbral definido de %.2f %%",
 		exceededRegister.Key, id_device, exceededRegister.Value, threshold)
 	return emailContent
 }
 
 func buildContentRAMUsage(id_device string, threshold float64, exceededRegister models.ThresholdExceededData) string {
 	emailContent := fmt.Sprintf(
-		"El dispositivo %s reportó un uso de RAM de %.2f %, superando el umbral definido de %.2f %",
+		"El dispositivo %s reportó un uso de RAM de %.2f %%, superando el umbral definido de %.2f %%",
 		id_device, exceededRegister.Value, threshold)
 	return emailContent
 }
