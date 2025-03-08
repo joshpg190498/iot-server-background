@@ -4,8 +4,8 @@ services:
     build:
       context: .
       dockerfile: modules/device-configuration/Dockerfile
-    ports:
-      - "4000:4000"
+    expose:
+      - 4000
     env_file:
       - .env
     restart: always    
@@ -14,8 +14,8 @@ services:
     build:
       context: .
       dockerfile: modules/data-reception/Dockerfile
-    ports:
-      - "4001:4001"
+    expose:
+      - 4001
     env_file:
       - .env
     restart: always
@@ -24,8 +24,8 @@ services:
     build:
       context: .
       dockerfile: modules/data-processing/Dockerfile
-    ports:
-      - "4002:4002"
+    expose:
+      - 4002
     env_file:
       - .env
     restart: always
@@ -34,8 +34,8 @@ services:
     build:
       context: .
       dockerfile: modules/threshold-validator/Dockerfile
-    ports:
-      - "4003:4003"
+    expose:
+      - 4003
     env_file:
       - .env
     restart: always
