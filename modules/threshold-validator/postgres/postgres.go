@@ -172,7 +172,7 @@ func ExistsRecentAlert(id_device, id_parameter, sinceUTC string) (bool, error) {
 			WHERE ID_DEVICE = $1 
 			AND ID_PARAMETER = $2 
 			AND EMAIL_SENT = true 
-			AND COLLECTED_AT_UTC >= $3
+			AND CREATED_AT_UTC >= $3
 		)
 	`
 	var exists bool
