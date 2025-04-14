@@ -164,3 +164,21 @@ func getBuildQueryToGetIdRefFunctions() map[string]FuncType {
 		"load_average": buildQueryToGetIdRefLoadAverage,
 	}
 }
+
+func ExistsRecentAlert(id_device, id_parameter, sinceUTC string) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM THRESHOLD_ALERTS 
+			WHERE ID_DEVICE = $1 
+			AND ID_PARAMETER = $2 
+			AND EMAIL_SENT = true 
+			AND COLLECTED_AT_UTC >= $3
+		)
+	`
+	var exists bool
+	err := db.QueryRow(context.Background(), query, id_device, id_parameter, sinceUTC).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("error checking recent alert existence: %w", err)
+	}
+	return exists, nil
+}

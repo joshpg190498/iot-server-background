@@ -7,6 +7,7 @@ import (
 	"ceiot-tf-background/modules/threshold-validator/models"
 	"ceiot-tf-background/modules/threshold-validator/postgres"
 	"ceiot-tf-background/modules/utils/kafka"
+	"time"
 
 	"encoding/json"
 	"log"
@@ -57,6 +58,18 @@ func kafkaHandleMessage(topic string, message []byte) {
 		return
 	}
 
+	oneHourAgo := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
+	exists, err := postgres.ExistsRecentAlert(dataPayload.IDDevice, dataPayload.Parameter, oneHourAgo)
+	if err != nil {
+		log.Printf("Error checking recent alert: %v", err)
+		return
+	}
+
+	if exists {
+		log.Printf("Recent alert exists for device %s, parameter %s. Skipping...", dataPayload.IDDevice, dataPayload.Parameter)
+		return
+	}
+
 	setting, err := postgres.GetParamater(dataPayload.IDDevice, dataPayload.Parameter)
 	if err != nil {
 		return
@@ -70,11 +83,13 @@ func kafkaHandleMessage(topic string, message []byte) {
 	if err != nil {
 		return
 	}
-	if len(thresholdExceededData) > 0 {
-		sendNotificationsAndLog(dataPayload, setting, thresholdExceededData)
-	} else {
+
+	if len(thresholdExceededData) == 0 {
 		log.Printf("No exceeded data")
+		return
 	}
+
+	sendNotificationsAndLog(dataPayload, setting, thresholdExceededData)
 }
 
 func sendNotificationsAndLog(
