@@ -77,7 +77,10 @@ func insertDiskUsage(tx pgx.Tx, dataPayload models.DataPayload) error {
 	}
 
 	for diskName, diskData := range dataMap {
-		data := diskData.(map[string]interface{})
+		data, ok := diskData.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid disk data format for disk %s", diskName)
+		}
 		_, err := tx.Exec(
 			context.Background(),
 			query,
@@ -109,7 +112,10 @@ func insertNetworkStats(tx pgx.Tx, dataPayload models.DataPayload) error {
 	}
 
 	for ifaceName, ifaceData := range dataMap {
-		data := ifaceData.(map[string]interface{})
+		data, ok := ifaceData.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid network stats format for interface %s", ifaceName)
+		}
 		_, err := tx.Exec(
 			context.Background(),
 			query,
@@ -145,7 +151,10 @@ func insertNetworkInfo(tx pgx.Tx, dataPayload models.DataPayload) error {
 	}
 
 	for ifaceName, ifaceData := range dataMap {
-		data := ifaceData.(map[string]interface{})
+		data, ok := ifaceData.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid network info format for interface %s", ifaceName)
+		}
 		flags := fmt.Sprintf("%v", data["flags"])
 		addrs := fmt.Sprintf("%v", data["addrs"])
 		_, err := tx.Exec(
@@ -302,7 +311,7 @@ func getInsertDataFunctions() map[string]FuncType {
 	}
 }
 
-func InsertData(dataPayload models.DataPayload) error {
+func InsertData(dataPayload models.DataPayload) (err error) {
 	ctx := context.Background()
 	if dataPayload.Data == nil {
 		return errors.New("empty data payload")
@@ -314,24 +323,25 @@ func InsertData(dataPayload models.DataPayload) error {
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback(ctx)
+			log.Printf("panic recuperado al insertar datos (device=%s, parameter=%s): %v", dataPayload.IDDevice, dataPayload.Parameter, r)
+			_ = tx.Rollback(ctx)
+			err = fmt.Errorf("panic recovered while inserting data: %v", r)
 		}
 	}()
 	defer tx.Rollback(ctx)
 
 	functions := getInsertDataFunctions()
-	if function, exists := functions[dataPayload.Parameter]; exists {
-		err := function(tx, dataPayload)
-		if err != nil {
-			return err
-		}
-	} else {
+	function, exists := functions[dataPayload.Parameter]
+	if !exists {
 		return errors.New("function not found")
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		return err
+	if insertErr := function(tx, dataPayload); insertErr != nil {
+		return insertErr
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return commitErr
 	}
 
 	log.Println("Data insertion successful")
@@ -340,6 +350,9 @@ func InsertData(dataPayload models.DataPayload) error {
 
 func hasNoData(data interface{}) bool {
 	v := reflect.ValueOf(data)
+	if v.Kind() != reflect.Struct {
+		return false
+	}
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if !field.IsZero() {

@@ -91,8 +91,8 @@ func ProcessParameterData(deviceID string, param string) (int, error) {
 
 	currentUTC := time.Now().UTC().Truncate(time.Hour)
 
-	if startTime == currentUTC {
-		log.Printf("Start time (%v) is equal to current time (%v), skipping processing for device %s and parameter %s", startTime, currentUTC, deviceID, param)
+	if !startTime.Before(currentUTC) {
+		log.Printf("Start time (%v) no es anterior a la hora actual (%v), se pospone el procesamiento para device %s y parámetro %s", startTime, currentUTC, deviceID, param)
 		return 0, nil
 	}
 
@@ -104,8 +104,8 @@ func ProcessParameterData(deviceID string, param string) (int, error) {
 	}
 }
 
-func getStartTime(lastProcessed time.Time) time.Time {
-	startTime := lastProcessed.Truncate(time.Hour)
+func getStartTime(firstDataTime time.Time) time.Time {
+	startTime := firstDataTime.Truncate(time.Hour)
 	return startTime
 }
 
@@ -118,10 +118,13 @@ func getLastProcessedTime(deviceID, param string) (time.Time, error) {
 	`, deviceID, param).Scan(&lastProcessed)
 
 	if err != nil {
-		return time.Time{}, nil
+		if err == pgx.ErrNoRows {
+			return time.Time{}, nil
+		}
+		return time.Time{}, err
 	}
 
-	return lastProcessed, err
+	return lastProcessed, nil
 }
 
 func getFirstDataTimestamp(param string, deviceID string, lastProcessed time.Time) (time.Time, error) {

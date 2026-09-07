@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"ceiot-tf-background/modules/data-reception/models"
 )
 
 func LoadEnvVars() (*models.Config, error) {
-	kafkaBroker := os.Getenv("KAFKA_BROKER")
-	kafkaBrokers := []string{kafkaBroker}
+	kafkaBrokers := splitAndTrim(os.Getenv("KAFKA_BROKER"), ",")
 	kafkaTopics := []string{"device-data-events"}
 
 	mqttClientID := "background-data-reception-mqtt-client"
@@ -27,8 +27,9 @@ func LoadEnvVars() (*models.Config, error) {
 	postgresHost := os.Getenv("POSTGRES_HOST")
 	postgresPort := os.Getenv("POSTGRES_PORT")
 	postgresDB := os.Getenv("POSTGRES_DB")
+	encodedPostgresUser := url.QueryEscape(postgresUser)
 	encodedPostgresPassword := url.QueryEscape(postgresPassword)
-	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, encodedPostgresPassword, postgresHost, postgresPort, postgresDB)
+	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", encodedPostgresUser, encodedPostgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
 		KafkaBrokers:  kafkaBrokers,
@@ -40,4 +41,15 @@ func LoadEnvVars() (*models.Config, error) {
 	}
 
 	return config, nil
+}
+
+func splitAndTrim(value string, sep string) []string {
+	var result []string
+	for _, part := range strings.Split(value, sep) {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }

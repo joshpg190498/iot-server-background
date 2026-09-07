@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"ceiot-tf-background/modules/device-configuration/models"
@@ -124,10 +125,13 @@ func UpdateSBCConfirmation(tx pgx.Tx, idDevice, hashUpdate, cfgType, updateDatet
 		WHERE ID_DEVICE = $2 AND HASH_UPDATE = $3 AND ID_TYPE = $4
 	`
 
-	_, err := tx.Exec(context.Background(), query, updateDatetimeUTC, idDevice, hashUpdate, cfgType)
+	tag, err := tx.Exec(context.Background(), query, updateDatetimeUTC, idDevice, hashUpdate, cfgType)
 	if err != nil {
 		log.Printf("Error updating UPDATE_DATETIME_UTC: %v", err)
 		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("no se encontró un device_update pendiente para device=%s hash=%s type=%s (posible confirmación duplicada, obsoleta o con IDDevice incorrecto)", idDevice, hashUpdate, cfgType)
 	}
 
 	return nil
@@ -138,6 +142,14 @@ func InsertMainDeviceInformation(tx pgx.Tx, idDevice string, mainDeviceInfo mode
 		INSERT INTO MAIN_DEVICE_INFORMATION (
 			ID_DEVICE, HOSTNAME, PROCESSOR, RAM, HOSTID, OS, KERNEL, CPU_COUNT
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (ID_DEVICE) DO UPDATE SET
+			HOSTNAME = EXCLUDED.HOSTNAME,
+			PROCESSOR = EXCLUDED.PROCESSOR,
+			RAM = EXCLUDED.RAM,
+			HOSTID = EXCLUDED.HOSTID,
+			OS = EXCLUDED.OS,
+			KERNEL = EXCLUDED.KERNEL,
+			CPU_COUNT = EXCLUDED.CPU_COUNT
 	`
 	_, err := tx.Exec(
 		context.Background(),
@@ -152,13 +164,13 @@ func InsertMainDeviceInformation(tx pgx.Tx, idDevice string, mainDeviceInfo mode
 		mainDeviceInfo.CpuCount,
 	)
 	if err != nil {
-		log.Printf("Error inserting main device information: %v", err)
+		log.Printf("Error inserting/updating main device information: %v", err)
 		return err
 	}
 	return nil
 }
 
-func UpdateDeviceAndInsertInfo(rCfgPayload models.ResponseConfigPayload) error {
+func UpdateDeviceAndInsertInfo(rCfgPayload models.ResponseConfigPayload) (err error) {
 	ctx := context.Background()
 	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -166,26 +178,25 @@ func UpdateDeviceAndInsertInfo(rCfgPayload models.ResponseConfigPayload) error {
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback(ctx)
+			log.Printf("panic recuperado al actualizar configuración (device=%s, hash=%s, type=%s): %v", rCfgPayload.IDDevice, rCfgPayload.HashUpdate, rCfgPayload.Type, r)
+			_ = tx.Rollback(ctx)
+			err = fmt.Errorf("panic recovered while updating device configuration: %v", r)
 		}
 	}()
 	defer tx.Rollback(ctx) // Will only be committed if successful
 
-	err = UpdateSBCConfirmation(tx, rCfgPayload.IDDevice, rCfgPayload.HashUpdate, rCfgPayload.Type, rCfgPayload.UpdateDatetimeUTC)
-	if err != nil {
-		return err
+	if confirmErr := UpdateSBCConfirmation(tx, rCfgPayload.IDDevice, rCfgPayload.HashUpdate, rCfgPayload.Type, rCfgPayload.UpdateDatetimeUTC); confirmErr != nil {
+		return confirmErr
 	}
 
 	if rCfgPayload.Type == "startup" {
-		err = InsertMainDeviceInformation(tx, rCfgPayload.IDDevice, rCfgPayload.MainDeviceInformation)
-		if err != nil {
-			return err
+		if infoErr := InsertMainDeviceInformation(tx, rCfgPayload.IDDevice, rCfgPayload.MainDeviceInformation); infoErr != nil {
+			return infoErr
 		}
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		return err
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return commitErr
 	}
 
 	log.Println("Transaction completed successfully for device configuration:", rCfgPayload.IDDevice)

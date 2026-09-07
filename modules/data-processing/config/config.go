@@ -14,8 +14,10 @@ func LoadEnvVars() (*models.Config, error) {
 	postgresHost := os.Getenv("POSTGRES_HOST")
 	postgresPort := os.Getenv("POSTGRES_PORT")
 	postgresDB := os.Getenv("POSTGRES_DB")
+
+	encodedPostgresUser := url.QueryEscape(postgresUser)
 	encodedPostgresPassword := url.QueryEscape(postgresPassword)
-	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, encodedPostgresPassword, postgresHost, postgresPort, postgresDB)
+	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", encodedPostgresUser, encodedPostgresPassword, postgresHost, postgresPort, postgresDB)
 
 	config := &models.Config{
 		PostgresURL: postgresURL,

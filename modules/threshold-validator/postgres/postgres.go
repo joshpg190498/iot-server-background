@@ -8,12 +8,15 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
 	db *pgxpool.Pool
 )
+
+var ErrSettingNotFound = errors.New("device reading setting not found")
 
 func ConnectDB(connString string) error {
 	ctx := context.Background()
@@ -49,6 +52,9 @@ func GetParamater(id_device string, id_parameter string) (models.DeviceReadingSe
 	err := row.Scan(&setting.IDDevice, &setting.Parameter, &setting.Period, &setting.Active,
 		&setting.ThresholdValue, &setting.HasThreshold, &setting.TablePointer)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.DeviceReadingSetting{}, ErrSettingNotFound
+		}
 		log.Printf("Error getting device reading setting by parameter: %v", err)
 		return models.DeviceReadingSetting{}, err
 	}
@@ -165,18 +171,19 @@ func getBuildQueryToGetIdRefFunctions() map[string]FuncType {
 	}
 }
 
-func ExistsRecentAlert(id_device, id_parameter, sinceUTC string) (bool, error) {
+func ExistsRecentAlert(idDevice, idParameter, key, sinceUTC string) (bool, error) {
 	query := `
 		SELECT EXISTS (
 			SELECT 1 FROM THRESHOLD_ALERTS 
 			WHERE ID_DEVICE = $1 
 			AND ID_PARAMETER = $2 
+			AND (DATA::jsonb ->> 'Key') = $3
 			AND EMAIL_SENT = true 
-			AND CREATED_AT_UTC >= $3
+			AND CREATED_AT_UTC >= $4
 		)
 	`
 	var exists bool
-	err := db.QueryRow(context.Background(), query, id_device, id_parameter, sinceUTC).Scan(&exists)
+	err := db.QueryRow(context.Background(), query, idDevice, idParameter, key, sinceUTC).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("error checking recent alert existence: %w", err)
 	}

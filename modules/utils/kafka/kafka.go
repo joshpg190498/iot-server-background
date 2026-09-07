@@ -16,11 +16,18 @@ var (
 	connectionLock sync.Mutex
 )
 
-func InitializeReader(brokers []string, groupID string, topics []string, handleMessage func(topic string, message []byte)) {
+const readErrorBackoff = 2 * time.Second
+
+func connected() bool {
 	connectionLock.Lock()
 	defer connectionLock.Unlock()
+	return isConnected
+}
 
+func InitializeReader(brokers []string, groupID string, topics []string, handleMessage func(topic string, message []byte) error) {
+	connectionLock.Lock()
 	if reader != nil {
+		connectionLock.Unlock()
 		log.Println("Kafka reader is already initialized")
 		return
 	}
@@ -32,10 +39,10 @@ func InitializeReader(brokers []string, groupID string, topics []string, handleM
 		MinBytes:    10e2, // 1KB
 		MaxBytes:    10e6, // 10MB
 	})
-
 	isConnected = true
-	log.Println("Kafka reader initialized")
+	connectionLock.Unlock()
 
+	log.Println("Kafka reader initialized")
 	go StartListening(handleMessage)
 }
 
@@ -49,55 +56,77 @@ func InitializeWriter(brokers []string) {
 	}
 
 	writer = &kafka.Writer{
-		Addr:     kafka.TCP(brokers...),
-		Balancer: &kafka.LeastBytes{},
+		Addr:         kafka.TCP(brokers...),
+		Balancer:     &kafka.LeastBytes{},
+		RequiredAcks: kafka.RequireAll,
 	}
 
 	isConnected = true
 	log.Println("Kafka writer initialized")
 }
 
-func StartListening(handleMessage func(topic string, message []byte)) {
+func StartListening(handleMessage func(topic string, message []byte) error) {
 	for {
-		if !isConnected {
-			timer := time.NewTimer(2 * time.Second)
-			<-timer.C
+		if !connected() {
+			time.Sleep(readErrorBackoff)
 			continue
 		}
 
-		m, err := reader.ReadMessage(context.Background())
+		m, err := reader.FetchMessage(context.Background())
 		if err != nil {
 			log.Printf("Error reading message: %v\n", err)
+			time.Sleep(readErrorBackoff)
 			continue
 		}
-		handleMessage(m.Topic, m.Value)
+
+		if err := safeHandle(handleMessage, m.Topic, m.Value); err != nil {
+			log.Printf("Error procesando mensaje de %s (no se confirma el offset, se reintentará): %v\n", m.Topic, err)
+			time.Sleep(readErrorBackoff)
+			continue
+		}
+
+		if err := reader.CommitMessages(context.Background(), m); err != nil {
+			log.Printf("Error confirmando offset de %s: %v\n", m.Topic, err)
+		}
 	}
 }
 
-func PublishData(topic string, key, data []byte) {
+func safeHandle(handleMessage func(topic string, message []byte) error, topic string, value []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("panic recuperado procesando mensaje de %s (se descarta, no se reintenta): %v\n", topic, r)
+			err = nil
+		}
+	}()
+	return handleMessage(topic, value)
+}
+
+func PublishData(topic string, key, data []byte) bool {
 	connectionLock.Lock()
-	defer connectionLock.Unlock()
+	w := writer
+	ok := isConnected
+	connectionLock.Unlock()
 
-	if writer == nil {
+	if w == nil {
 		log.Println("Kafka writer is not initialized")
-		return
+		return false
 	}
-
-	if !isConnected {
+	if !ok {
 		log.Println("Kafka client is not connected.")
-		return
+		return false
 	}
 
-	err := writer.WriteMessages(context.Background(), kafka.Message{
+	err := w.WriteMessages(context.Background(), kafka.Message{
 		Topic: topic,
 		Key:   key,
 		Value: data,
 	})
 	if err != nil {
 		log.Printf("Error publishing message to topic %s: %v\n", topic, err)
-	} else {
-		log.Printf("Message published to topic %s: %s\n", topic, data)
+		return false
 	}
+	log.Printf("Message published to topic %s\n", topic)
+	return true
 }
 
 func Close() {
@@ -105,16 +134,14 @@ func Close() {
 	defer connectionLock.Unlock()
 
 	if reader != nil {
-		err := reader.Close()
-		if err != nil {
+		if err := reader.Close(); err != nil {
 			log.Printf("Error closing Kafka reader: %v\n", err)
 		}
 		reader = nil
 	}
 
 	if writer != nil {
-		err := writer.Close()
-		if err != nil {
+		if err := writer.Close(); err != nil {
 			log.Printf("Error closing Kafka writer: %v\n", err)
 		}
 		writer = nil

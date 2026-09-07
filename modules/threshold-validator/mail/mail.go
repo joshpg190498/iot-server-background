@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-var (
-	err error
-)
-
 func newSmtpClient(smtpConfig models.SmtpConfig) (*smtp.Client, error) {
 	addr := fmt.Sprintf("%s:%s", smtpConfig.Host, smtpConfig.Port)
 	auth := smtp.PlainAuth("", smtpConfig.User, smtpConfig.Password, smtpConfig.Host)
@@ -26,7 +22,7 @@ func newSmtpClient(smtpConfig models.SmtpConfig) (*smtp.Client, error) {
 		ServerName:         smtpConfig.Host,
 	}
 
-	if err = conn.StartTLS(tlsConfig); err != nil {
+	if err := conn.StartTLS(tlsConfig); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to start TLS: %w", err)
 	}
@@ -39,7 +35,25 @@ func newSmtpClient(smtpConfig models.SmtpConfig) (*smtp.Client, error) {
 	return conn, nil
 }
 
+func splitRecipients(value string) []string {
+	var result []string
+	for _, part := range strings.Split(value, ",") {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
 func SendNotification(smtpConfig models.SmtpConfig, body string) bool {
+	toRecipients := splitRecipients(smtpConfig.To)
+	if len(toRecipients) == 0 {
+		log.Println("No hay destinatarios (SMTP_TO) configurados, no se envía la notificación")
+		return false
+	}
+	ccRecipients := splitRecipients(smtpConfig.Cc)
+
 	client, err := newSmtpClient(smtpConfig)
 	if err != nil {
 		log.Println(err)
@@ -47,50 +61,42 @@ func SendNotification(smtpConfig models.SmtpConfig, body string) bool {
 	}
 	defer client.Close()
 
-	err = client.Mail(smtpConfig.User)
-	if err != nil {
+	if err := client.Mail(smtpConfig.User); err != nil {
 		log.Println(err)
 		return false
 	}
 
-	toRecipients := strings.Split(smtpConfig.To, ",")
-	ccRecipients := strings.Split(smtpConfig.Cc, ",")
-
 	for _, recipient := range toRecipients {
-		err := client.Rcpt(recipient)
-		if err != nil {
+		if err := client.Rcpt(recipient); err != nil {
 			log.Println(err)
 			return false
 		}
 	}
 
 	for _, recipient := range ccRecipients {
-		err := client.Rcpt(recipient)
-		if err != nil {
+		if err := client.Rcpt(recipient); err != nil {
 			log.Println(err)
 			return false
 		}
 	}
 
-	if len(toRecipients) == 0 {
-		return false
-	}
-
 	w, err := client.Data()
 	if err != nil {
+		log.Println(err)
 		return false
 	}
 
 	subject := "Plataforma de monitoreo de rendimiento para computadoras de placa única basadas en Linux"
+	to := strings.Join(toRecipients, ", ")
 	var msg string
 	if len(ccRecipients) > 0 {
-		msg = fmt.Sprintf("Subject: %s\r\nTo: %s\r\nCc: %s\r\n\r\n%s", subject, smtpConfig.To, smtpConfig.Cc, body)
+		cc := strings.Join(ccRecipients, ", ")
+		msg = fmt.Sprintf("Subject: %s\r\nTo: %s\r\nCc: %s\r\n\r\n%s", subject, to, cc, body)
 	} else {
-		msg = fmt.Sprintf("Subject: %s\r\nTo: %s\r\n\r\n%s", subject, smtpConfig.To, body)
+		msg = fmt.Sprintf("Subject: %s\r\nTo: %s\r\n\r\n%s", subject, to, body)
 	}
 
-	_, err = w.Write([]byte(msg))
-	if err != nil {
+	if _, err := w.Write([]byte(msg)); err != nil {
 		log.Println("Error writing message:", err)
 		return false
 	}
@@ -103,14 +109,16 @@ func SendNotification(smtpConfig models.SmtpConfig, body string) bool {
 }
 
 func BuildContent(dataPayload models.DataPayload, setting models.DeviceReadingSetting, exceededRegister models.ThresholdExceededData) (string, error) {
+	if setting.ThresholdValue == nil {
+		return "", errors.New("threshold value is nil")
+	}
 
 	functions := getBuildContentFunctions()
-	if function, exists := functions[dataPayload.Parameter]; exists {
-		emailContent := function(dataPayload.IDDevice, float64(*setting.ThresholdValue), exceededRegister)
-		return emailContent, nil
-	} else {
+	function, exists := functions[dataPayload.Parameter]
+	if !exists {
 		return "", errors.New("function not found")
 	}
+	return function(dataPayload.IDDevice, *setting.ThresholdValue, exceededRegister), nil
 }
 
 func buildContentCPUTemperature(id_device string, threshold float64, exceededRegister models.ThresholdExceededData) string {
