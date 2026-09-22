@@ -10,6 +10,7 @@ type Config struct {
 	MQTTSubTopics          []string
 	PostgresURL            string
 	MQTTPubConfigTopicTemp string
+	CertsDir               string
 }
 
 type KafkaMessage struct {

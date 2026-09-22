@@ -1,11 +1,11 @@
 package main
 
 import (
+	"ceiot-tf-background/internal/kafka"
+	"ceiot-tf-background/internal/mqtt"
 	"ceiot-tf-background/modules/device-configuration/config"
 	"ceiot-tf-background/modules/device-configuration/models"
 	"ceiot-tf-background/modules/device-configuration/postgres"
-	"ceiot-tf-background/modules/utils/kafka"
-	"ceiot-tf-background/modules/utils/mqtt"
 	"fmt"
 	"os"
 	"os/signal"
@@ -42,7 +42,7 @@ func loadConfiguration() {
 }
 
 func startMQTTClient() {
-	go mqtt.ConnectClient(cfg.MQTTBroker, cfg.MQTTClientID, cfg.MQTTSubTopics, mqttHandleMessage)
+	go mqtt.ConnectClient(cfg.MQTTBroker, cfg.MQTTClientID, cfg.MQTTSubTopics, cfg.CertsDir, mqttHandleMessage)
 }
 
 func initializeDatabase() {

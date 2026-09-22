@@ -11,7 +11,7 @@ RUN go mod download
 
 # Copy only the necessary directories and files
 COPY modules/device-configuration/. ./modules/device-configuration/
-COPY modules/utils/. ./modules/utils/
+COPY internal/. ./internal/
 
 # Change working directory to build the application
 WORKDIR /go/src/app/modules/device-configuration
@@ -27,7 +27,6 @@ WORKDIR /app
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /go/src/app/modules/device-configuration/main ./modules/device-configuration/main
-COPY --from=builder /go/src/app/modules/device-configuration/certs/. ./modules/device-configuration/certs/
 
 # Set the entry point for the container
 WORKDIR /app/modules/device-configuration

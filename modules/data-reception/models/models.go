@@ -7,6 +7,7 @@ type Config struct {
 	MQTTClientID  string
 	MQTTSubTopics []string
 	PostgresURL   string
+	CertsDir      string
 }
 
 type DataPayload struct {

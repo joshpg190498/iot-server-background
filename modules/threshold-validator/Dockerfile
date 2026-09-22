@@ -11,7 +11,7 @@ RUN go mod download
 
 # Copy only the necessary directories and files
 COPY modules/threshold-validator/. ./modules/threshold-validator/
-COPY modules/utils/. ./modules/utils/
+COPY internal/. ./internal/
 
 # Change working directory to build the application
 WORKDIR /go/src/app/modules/threshold-validator

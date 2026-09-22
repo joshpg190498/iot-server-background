@@ -1,12 +1,12 @@
 package main
 
 import (
+	"ceiot-tf-background/internal/kafka"
 	"ceiot-tf-background/modules/threshold-validator/config"
 	"ceiot-tf-background/modules/threshold-validator/evaluator"
 	"ceiot-tf-background/modules/threshold-validator/mail"
 	"ceiot-tf-background/modules/threshold-validator/models"
 	"ceiot-tf-background/modules/threshold-validator/postgres"
-	"ceiot-tf-background/modules/utils/kafka"
 	"encoding/json"
 	"errors"
 	"log"

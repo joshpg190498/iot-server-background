@@ -31,6 +31,8 @@ func LoadEnvVars() (*models.Config, error) {
 	encodedPostgresPassword := url.QueryEscape(postgresPassword)
 	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", encodedPostgresUser, encodedPostgresPassword, postgresHost, postgresPort, postgresDB)
 
+	certsDir := os.Getenv("CERTS_DIR")
+
 	config := &models.Config{
 		KafkaBrokers:  kafkaBrokers,
 		KafkaTopics:   kafkaTopics,
@@ -38,6 +40,7 @@ func LoadEnvVars() (*models.Config, error) {
 		MQTTBroker:    mqttBroker,
 		MQTTSubTopics: mqttSubTopics,
 		PostgresURL:   postgresURL,
+		CertsDir:      certsDir,
 	}
 
 	return config, nil
