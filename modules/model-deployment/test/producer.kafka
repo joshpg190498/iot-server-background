@@ -1,0 +1,6 @@
+PRODUCER KAFKA-CLIENT-TESTER
+topic: model-deploy-events
+{
+  "id_model_version": 3,
+  "devices": ["NODE001"]
+}

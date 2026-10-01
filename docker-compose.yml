@@ -47,3 +47,15 @@ services:
     volumes:
       - ./certs:/app/certs:ro
     restart: always
+
+  model-deployment:
+    build:
+      context: .
+      dockerfile: modules/model-deployment/Dockerfile
+    expose:
+      - 4004
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+    restart: always
