@@ -295,6 +295,75 @@ func insertLoadAverage(tx pgx.Tx, dataPayload models.DataPayload) error {
 	return nil
 }
 
+// --- Métricas para la agregación consciente de la salud del hardware (FL) ---
+// ON CONFLICT DO NOTHING: un reenvío del mismo dato (mismo instante) no duplica filas.
+
+func insertCPUFrequency(tx pgx.Tx, dataPayload models.DataPayload) error {
+	// FREQ_SOURCE / THROTTLED_*: los agentes anteriores no los envían -> NULL.
+	query := `
+		INSERT INTO CPU_FREQUENCY (
+			ID_DEVICE, CUR_FREQ_MHZ, MAX_FREQ_MHZ, FREQ_RATIO,
+			FREQ_SOURCE, THROTTLED_FLAGS, THROTTLED_NOW, COLLECTED_AT_UTC
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (ID_DEVICE, COLLECTED_AT_UTC) DO NOTHING
+	`
+	dataMap, ok := dataPayload.Data.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid data payload format")
+	}
+	_, err := tx.Exec(context.Background(), query,
+		dataPayload.IDDevice,
+		dataMap["curFreqMHz"],
+		dataMap["maxFreqMHz"],
+		dataMap["freqRatio"],
+		dataMap["freqSource"],
+		toInt64(dataMap["throttledFlags"]),
+		dataMap["throttledNow"],
+		dataPayload.CollectedAtUtc)
+	if err != nil {
+		return fmt.Errorf("failed to insert CPU frequency: %w", err)
+	}
+	log.Printf("CPU frequency data inserted for device %s\n", dataPayload.IDDevice)
+	return nil
+}
+
+func insertPressure(tx pgx.Tx, dataPayload models.DataPayload) error {
+	query := `
+		INSERT INTO PRESSURE_STALL (
+			ID_DEVICE, CPU_SOME_AVG10, CPU_SOME_AVG60, CPU_SOME_TOTAL,
+			MEM_SOME_AVG10, MEM_FULL_AVG10, MEM_SOME_TOTAL, MEM_FULL_TOTAL, COLLECTED_AT_UTC
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		ON CONFLICT (ID_DEVICE, COLLECTED_AT_UTC) DO NOTHING
+	`
+	dataMap, ok := dataPayload.Data.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid data payload format")
+	}
+	_, err := tx.Exec(context.Background(), query,
+		dataPayload.IDDevice,
+		dataMap["cpuSomeAvg10"],
+		dataMap["cpuSomeAvg60"],
+		toInt64(dataMap["cpuSomeTotal"]),
+		dataMap["memSomeAvg10"],
+		dataMap["memFullAvg10"],
+		toInt64(dataMap["memSomeTotal"]),
+		toInt64(dataMap["memFullTotal"]),
+		dataPayload.CollectedAtUtc)
+	if err != nil {
+		return fmt.Errorf("failed to insert pressure stall: %w", err)
+	}
+	log.Printf("Pressure stall data inserted for device %s\n", dataPayload.IDDevice)
+	return nil
+}
+
+// toInt64: el JSON decodifica los contadores PSI como float64; se guardan como BIGINT.
+func toInt64(v interface{}) interface{} {
+	if f, ok := v.(float64); ok {
+		return int64(f)
+	}
+	return v
+}
+
 type FuncType func(tx pgx.Tx, dataPayload models.DataPayload) error
 
 func getInsertDataFunctions() map[string]FuncType {
@@ -308,6 +377,8 @@ func getInsertDataFunctions() map[string]FuncType {
 		"last_reboot":  insertLastReboot,
 		"cpu_usage":    insertCPUUsage,
 		"load_average": insertLoadAverage,
+		"cpu_freq":     insertCPUFrequency,
+		"pressure":     insertPressure,
 	}
 }
 

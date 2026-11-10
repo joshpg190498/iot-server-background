@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -17,6 +18,12 @@ var (
 )
 
 const readErrorBackoff = 2 * time.Second
+
+// Messages that the async writer could not deliver (see InitializeWriter)
+var asyncErrors atomic.Uint64
+
+// AsyncErrors returns how many messages the async writer failed to deliver.
+func AsyncErrors() uint64 { return asyncErrors.Load() }
 
 func connected() bool {
 	connectionLock.Lock()
@@ -55,10 +62,22 @@ func InitializeWriter(brokers []string) {
 		return
 	}
 
+	// Async writer: WriteMessages only queues the message and returns at once.
+	// Messages are sent in batches (up to 100, or every 10 ms). Delivery errors
+	// are reported in Completion, so the caller is never blocked by Kafka.
 	writer = &kafka.Writer{
 		Addr:         kafka.TCP(brokers...),
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireAll,
+		Async:        true,
+		BatchSize:    100,
+		BatchTimeout: 10 * time.Millisecond,
+		Completion: func(messages []kafka.Message, err error) {
+			if err != nil {
+				asyncErrors.Add(uint64(len(messages)))
+				log.Printf("Error publicando %d mensajes en Kafka: %v\n", len(messages), err)
+			}
+		},
 	}
 
 	isConnected = true
@@ -125,7 +144,7 @@ func PublishData(topic string, key, data []byte) bool {
 		log.Printf("Error publishing message to topic %s: %v\n", topic, err)
 		return false
 	}
-	log.Printf("Message published to topic %s\n", topic)
+	// With the async writer, true means "queued"; errors arrive in Completion.
 	return true
 }
 
